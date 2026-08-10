@@ -2,11 +2,13 @@
 
 ## Codex Master Workflow
 
-版本：v0.1
+版本：v0.2
 项目阶段：MVP
 目标用户：中小型电源研发团队
 第一支持拓扑：Half-Bridge LLC
 第一支持范围：300–1000 W、300–420 VDC 输入、24/48 V 固定输出
+
+Phase 编号唯一依据：本文第 51–62 节定义的 Phase Prompt 与“Phase 0–10 权威开发顺序”。标记为 Cross-Phase 或 Future Extension 的内容不占用 Phase 编号，必须单独授权后实施。
 
 ---
 
@@ -456,9 +458,9 @@ INSUFFICIENT_DATA
 
 ---
 
-# 10. 确定性 LLC 计算引擎
+# 10. Phase 1：确定性 LLC 计算引擎
 
-第一阶段必须实现以下函数。
+Phase 1必须实现以下函数。
 
 ## 10.1 Resonant Frequency
 
@@ -566,7 +568,7 @@ return "大概100kHz"
 
 ---
 
-# 12. 第一阶段规则引擎
+# 12. Phase 2：第一版规则引擎
 
 Rule必须是独立对象。
 
@@ -891,7 +893,7 @@ CRITICAL
 
 ---
 
-# 14. 第一阶段API
+# 14. Phase 3：Project 与 Review API
 
 实现：
 
@@ -951,7 +953,7 @@ CRITICAL
 
 ---
 
-# 16. 前端MVP
+# 16. Phase 3：前端MVP
 
 第一版只实现：
 
@@ -1001,7 +1003,7 @@ VDS Rating
 
 ---
 
-# 17. Design Review Page
+# 17. Phase 3：Design Review Page
 
 页面顶部：
 
@@ -1057,7 +1059,7 @@ Recommended Next Step
 
 ---
 
-# 18. 第一阶段报告
+# 18. Phase 4：HTML Design Review Report
 
 实现：
 
@@ -1065,7 +1067,7 @@ Recommended Next Step
 Generate Review Report
 ```
 
-第一阶段使用：
+Phase 4使用：
 
 HTML
 
@@ -1086,9 +1088,9 @@ HTML
 
 ---
 
-# 19. 第一阶段完成标准
+# 19. 第一个可用 Demo 验收标准（Phase 0–4）
 
-Phase 1必须同时满足：
+第一个可用 Demo 必须同时满足：
 
 * Backend运行成功。
 * Frontend运行成功。
@@ -1104,17 +1106,19 @@ Phase 1必须同时满足：
 * 无Critical lint/type errors。
 * examples中存在一个500 W示例项目。
 
-否则不得进入下一阶段。
+否则不得进入 Phase 5。
 
 ---
 
-# 20. Phase 2：波形分析
+# 20. Phase 5：Waveform Analysis MVP
 
-完成Design Review MVP以后再开始。
+完成 Phase 0–4 的 Design Review MVP 以后再开始。
 
-第一目标：
+Phase 5目标：
 
-> ZVS Check
+> 建立可验证的波形加载、校验、分段与基础特征计算能力。
+
+ZVS Check 属于 Phase 6，不得在 Phase 5 提前实现。
 
 禁止同时开发万能故障诊断。
 
@@ -1156,7 +1160,9 @@ test_condition
 
 ---
 
-# 22. Waveform Pipeline
+# 22. Phase 5–6 Waveform Pipeline
+
+Phase 5：
 
 ```text
 CSV
@@ -1173,6 +1179,12 @@ switching cycle segmentation
  ↓
 frequency measurement
  ↓
+peak / RMS calculation
+```
+
+Phase 6在上述结果之上扩展：
+
+```text
 dead-time estimation
  ↓
 channel alignment
@@ -1194,7 +1206,7 @@ ZVS report
 backend/app/waveform/
 ```
 
-包含：
+Phase 5包含：
 
 ```text
 loader.py
@@ -1202,6 +1214,11 @@ preprocessing.py
 edges.py
 cycles.py
 features.py
+```
+
+Phase 6再增加：
+
+```text
 zvs.py
 ```
 
@@ -1223,15 +1240,19 @@ segment_cycles()
 calculate_peak()
 
 calculate_rms()
-
-calculate_dead_time()
-
-calculate_vds_at_gate_turn_on()
 ```
 
 ---
 
-# 25. ZVS Analyzer
+# 25. Phase 6：ZVS Analyzer
+
+Phase 6新增：
+
+```text
+calculate_dead_time()
+
+calculate_vds_at_gate_turn_on()
+```
 
 输入：
 
@@ -1269,7 +1290,7 @@ INSUFFICIENT_DATA
 
 ---
 
-# 26. 波形可视化
+# 26. Phase 6：ZVS 波形可视化
 
 前端必须展示：
 
@@ -1287,7 +1308,9 @@ INSUFFICIENT_DATA
 
 ---
 
-# 27. Phase 2验收标准
+# 27. Phase 5–6 验收标准
+
+## 27.1 Phase 5 Waveform Engine
 
 必须：
 
@@ -1295,6 +1318,14 @@ INSUFFICIENT_DATA
 * 自动解析；
 * 自动检测开关周期；
 * 计算频率；
+* 计算Peak与RMS；
+* 使用synthetic waveform编写自动测试；
+* 不依赖LLM。
+
+## 27.2 Phase 6 ZVS Check
+
+必须：
+
 * 计算dead time；
 * 计算VDS at turn-on；
 * 页面显示标注波形；
@@ -1304,7 +1335,7 @@ INSUFFICIENT_DATA
 
 ---
 
-# 28. Phase 3：器件数据手册
+# 28. Phase 7：器件数据手册
 
 随后增加：
 
@@ -1368,7 +1399,9 @@ CRITICAL安全结论。
 
 ---
 
-# 30. Phase 4：BOM
+# 30. Future Extension：BOM（暂不占用 Phase 编号）
+
+BOM 不属于当前 Phase 0–10 的必做开发顺序。只有收到单独明确授权后才实施；不得插入或替代 Phase 7–10。
 
 支持：
 
@@ -1400,7 +1433,7 @@ review readiness
 
 ---
 
-# 31. Phase 5：故障案例库
+# 31. Phase 8：故障案例库
 
 FaultCase：
 
@@ -1472,7 +1505,7 @@ light-load instability
 
 ---
 
-# 33. Phase 6：故障诊断引擎
+# 33. Phase 9：故障诊断引擎
 
 诊断不能直接：
 
@@ -1537,7 +1570,7 @@ Top 3候选根因。
 
 ---
 
-# 35. Phase 7：LLM接入
+# 35. Phase 10：LLM接入
 
 只有此前所有核心引擎完成以后，才能加入LLM。
 
@@ -1604,7 +1637,9 @@ LLM必须：
 
 ---
 
-# 39. Phase 8：Evaluation
+# 39. Cross-Phase：Evaluation
+
+Evaluation 是贯穿各 Phase 的质量门禁，不占用 Phase 8。每个功能 Phase 都必须增加与其风险相称的测试；本节指标需在单独授权的 Evaluation Task 中统一审计。
 
 建立：
 
@@ -1711,7 +1746,9 @@ Unsupported safety conclusion：
 
 ---
 
-# 45. Phase 9：安全层
+# 45. Cross-Phase：安全策略
+
+Safety Policy 从 Phase 0 起持续生效，不占用 Phase 9，也不得推迟到某个后续 Phase 才执行。
 
 增加：
 
@@ -1737,7 +1774,9 @@ Requires qualified engineer review.
 
 ---
 
-# 46. Phase 10：Deployment
+# 46. Future Extension：Deployment（暂不占用 Phase 编号）
+
+Deployment 不属于当前 Phase 0–10 核心能力顺序，必须在 Phase 10 之后或收到单独明确授权时实施。
 
 开发：
 
@@ -2218,9 +2257,9 @@ Add evaluation tests for hallucinated parameters, missing evidence and unit mist
 
 ---
 
-# 62. 第一阶段实际开发顺序
+# 62. Phase 0–10 权威开发顺序
 
-严格按照：
+本节是本文唯一的 Phase 编号依据。严格按照：
 
 ```text
 Phase 0
@@ -2285,9 +2324,20 @@ Phase 10
 LLM / Agent
 ```
 
+以下内容不占用 Phase 编号，必须单独授权：
+
+```text
+BOM
+Unified Evaluation Audit
+Deployment
+PDF Report
+```
+
+Safety Policy 是所有 Phase 的横切约束，不是一个等待后续实现的独立 Phase。
+
 ---
 
-# 63. 第一个里程碑
+# 63. 第一个里程碑（Phase 0–4）
 
 必须首先实现：
 
@@ -2327,7 +2377,7 @@ INSUFFICIENT DATA   X
 
 ---
 
-# 64. 第二个里程碑
+# 64. 第二个里程碑（Phase 5–6）
 
 增加：
 
@@ -2357,9 +2407,11 @@ INSUFFICIENT DATA   X
 
 ---
 
-# 65. 第三个里程碑
+# 65. 第三个里程碑（Phase 7–10 + 经授权扩展）
 
 增加：
+
+在 Phase 7–10 完成后，可按明确授权加入 BOM 等 Future Extension。
 
 ```text
 BOM
