@@ -16,6 +16,6 @@
 
 该 endpoint 不执行数据库、工程计算、规则、波形或外部服务检查。
 
-## Phase 1 Boundary
+## Current Boundary
 
-Phase 1 的确定性计算引擎仅作为 Python 模块提供，尚未暴露 REST API。Calculation API 属于后续明确授权的 Phase，当前不得通过 `/health` 或临时 endpoint 绕过架构边界。
+确定性计算和 Design Review Rule Engine 仅作为 Python 模块提供，尚未暴露 REST API。Project/Calculation/Review API 属于后续明确授权的 Phase，当前不得通过 `/health` 或临时 endpoint 绕过架构边界。

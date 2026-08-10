@@ -1,0 +1,48 @@
+from app.rules.base import ReviewRule
+from app.rules.builtin import (
+    CharacteristicImpedanceRule,
+    ControllerFrequencyCapabilityRule,
+    CriticalParameterCompletenessRule,
+    DeadTimeInformationRule,
+    EvidenceCompletenessRule,
+    GainReviewPrerequisiteRule,
+    InductanceRatioObservationRule,
+    InputVoltageOrderingRule,
+    LowerResonantFrequencyCalculationRule,
+    MOSFETCurrentScreeningRule,
+    MOSFETMeasuredPeakVoltageRule,
+    MOSFETStaticVoltageScreeningRule,
+    OutputPowerConsistencyRule,
+    PositiveValuesRule,
+    ResonantCapacitorRMSCurrentRule,
+    ResonantCapacitorVoltageRatingRule,
+    ResonantFrequencyCalculationRule,
+    ResonantFrequencyOperatingRangeRule,
+    SwitchingFrequencyOrderingRule,
+    TransformerRatioRequiredRule,
+)
+
+
+BUILTIN_RULES: tuple[ReviewRule, ...] = (
+    CriticalParameterCompletenessRule(),
+    PositiveValuesRule(),
+    InputVoltageOrderingRule(),
+    SwitchingFrequencyOrderingRule(),
+    ResonantFrequencyCalculationRule(),
+    LowerResonantFrequencyCalculationRule(),
+    ResonantFrequencyOperatingRangeRule(),
+    InductanceRatioObservationRule(),
+    CharacteristicImpedanceRule(),
+    OutputPowerConsistencyRule(),
+    MOSFETStaticVoltageScreeningRule(),
+    MOSFETMeasuredPeakVoltageRule(),
+    MOSFETCurrentScreeningRule(),
+    ResonantCapacitorVoltageRatingRule(),
+    ResonantCapacitorRMSCurrentRule(),
+    ControllerFrequencyCapabilityRule(),
+    DeadTimeInformationRule(),
+    TransformerRatioRequiredRule(),
+    GainReviewPrerequisiteRule(),
+    EvidenceCompletenessRule(),
+)
+

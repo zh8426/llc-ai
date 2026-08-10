@@ -1,6 +1,6 @@
 # Domain Assumptions
 
-本文记录 Phase 1 引入的公式定义、输入约束、单位约定和适用边界。公式依据为 `docs/MASTER_WORKFLOW.md` 第 10 节。
+本文记录 Phase 1 确定性计算与 Phase 2 规则引擎引入的公式定义、输入约束、单位约定、项目级配置和适用边界。依据为 `docs/MASTER_WORKFLOW.md` 第 10、12–13 节。
 
 ## Unit Boundary
 
@@ -44,3 +44,24 @@
 - 任一计算成功都不得被描述为设计安全、通过评审、符合标准或可直接量产。
 - Phase 1 未引入工程裕量、经验阈值或 Design Review Rule。
 
+## Phase 2 Rule Definitions
+
+Phase 2 引入以下项目级规则定义，不引入通用数值裕量：
+
+- R001 将 `Vin` 展开为 `vin_min`、`vin_nom`、`vin_max`，与 Project Domain Model 和 R003 一致。
+- R010 relative error 定义为 `abs(Vout × Iout - Pout) / Pout`；允许上限必须由 `output_power_relative_tolerance` 显式配置。
+- R012 measured VDS margin 定义为 `(VDS rating - measured VDS peak) / VDS rating`；要求下限必须由 `measured_vds_required_margin_ratio` 显式配置。
+- R013、R014、R015 仅在 stress **大于** supplied rating 时输出 `CRITICAL`。等于或低于 rating 时只输出 `INFO`，除非未来项目配置了经过批准的 margin rule。
+- R016 将 controller range 未完整覆盖 project switching range 定义为 `WARNING`，不把它表述为安全失效。
+- R017、R018、R019 只验证后续分析的前置数据，不执行 ZVS 或 gain calculation。
+- R019 的 required parameter list 必须由项目配置；Phase 2 不猜测完整增益模型需要哪些字段。
+- R020 将无 Evidence 的 WARNING / CRITICAL 从正式 findings 数据流中隔离。
+
+## Phase 2 Evidence Boundary
+
+- Phase 2 中的器件 rating、stress 和 measured peak 均来自用户结构化输入，因此 Evidence Source 标记为 `user_input`。
+- `measured_*` 字段表示用户声明的数据含义，不代表系统已经验证示波器文件、探头配置或测试条件。
+- Datasheet Parser 和 Waveform Engine 尚未实现，不得将用户输入升级描述为 verified datasheet 或 waveform evidence。
+- R012 margin 可以为负值，用于表示 measured peak 已超过 rating；Phase 1 核心公式结果仍要求为有限正值。
+- 所有 `CRITICAL` 器件应力结果要求 Engineer Confirmation。
+- 任一 PASS 都是单条有限规则的结果，不构成安全、合规或量产结论。
