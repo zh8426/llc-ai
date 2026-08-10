@@ -5,11 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "llc-engineering-assistant-backend"
 version = "0.1.0"
-description = "Phase 0 backend skeleton for the LLC Engineering Assistant."
+description = "Deterministic LLC core calculation backend for the LLC Engineering Assistant."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115,<1.0",
+    "pint>=0.24,<1.0",
     "pydantic>=2.10,<3.0",
     "sqlalchemy>=2.0,<3.0",
     "uvicorn[standard]>=0.34,<1.0",
@@ -29,4 +30,3 @@ include = ["app*"]
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
 addopts = "-ra --strict-config --strict-markers"
-
