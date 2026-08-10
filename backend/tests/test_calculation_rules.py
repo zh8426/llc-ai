@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import pytest
 
+from app.engine import calculate_output_current
 from app.rules.builtin import (
     CharacteristicImpedanceRule,
     InductanceRatioObservationRule,
@@ -11,7 +12,7 @@ from app.rules.builtin import (
     ResonantFrequencyOperatingRangeRule,
 )
 from app.schemas.engineering import EngineeringQuantity
-from app.schemas.review import ReviewContext, Severity
+from app.schemas.review import EvidenceSource, ReviewContext, ReviewParameterName, Severity
 
 
 def q(value: float, unit: str) -> EngineeringQuantity:
@@ -178,6 +179,35 @@ def test_r010_warns_above_explicit_project_tolerance(
     assert finding.calculated_values["output_power_relative_error"].value == pytest.approx(0.152)
 
 
+def test_r010_preserves_calculation_provenance_for_derived_iout(
+    normal_review_context: ReviewContext,
+) -> None:
+    project = normal_review_context.project.model_copy(update={"iout": None})
+    iout_result = calculate_output_current(
+        pout=project.pout,
+        vout=project.vout,
+    )
+    context = normal_review_context.model_copy(
+        update={
+            "project": project,
+            "calculated_inputs": {ReviewParameterName.IOUT: iout_result},
+        }
+    )
+
+    finding = OutputPowerConsistencyRule().evaluate(context)
+
+    assert finding.severity == Severity.PASS
+    calculation_evidence_items = [
+        evidence
+        for evidence in finding.evidence
+        if evidence.source == EvidenceSource.CALCULATION
+    ]
+    assert any(
+        "LLC-IOUT-V1" in evidence.references
+        for evidence in calculation_evidence_items
+    )
+
+
 @pytest.mark.parametrize("field", ["pout", "vout", "iout"])
 def test_r010_requires_all_power_consistency_inputs(
     normal_review_context: ReviewContext,
@@ -210,4 +240,3 @@ def test_r010_rejects_invalid_power_units(
     context = update_review_context(normal_review_context, "project", iout=q(10, "V"))
 
     assert OutputPowerConsistencyRule().evaluate(context).severity == Severity.INSUFFICIENT_DATA
-

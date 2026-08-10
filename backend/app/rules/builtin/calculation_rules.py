@@ -11,7 +11,12 @@ from app.rules.helpers import (
     user_input_evidence,
 )
 from app.schemas.engineering import CalculationResult, EngineeringQuantity
-from app.schemas.review import Finding, ReviewContext, Severity
+from app.schemas.review import (
+    Finding,
+    ReviewContext,
+    ReviewParameterName,
+    Severity,
+)
 
 
 class ResonantFrequencyCalculationRule(ReviewRule):
@@ -309,14 +314,37 @@ class OutputPowerConsistencyRule(ReviewRule):
         self, context: ReviewContext, prior_findings: Sequence[Finding] = ()
     ) -> Finding:
         project = context.project
-        supplied = {"pout": project.pout, "vout": project.vout, "iout": project.iout}
+        iout_calculation = context.calculated_inputs.get(ReviewParameterName.IOUT)
+        iout_quantity = project.iout
+        evidence_items = [
+            user_input_evidence(
+                "User-provided output power consistency inputs.",
+                pout=project.pout,
+                vout=project.vout,
+                iout=project.iout,
+            )
+        ]
+        if iout_quantity is None and iout_calculation is not None:
+            iout_quantity = EngineeringQuantity(
+                value=iout_calculation.value,
+                unit=iout_calculation.unit,
+            )
+            evidence_items.append(
+                calculation_evidence(
+                    iout_calculation,
+                    "Deterministically calculated Iout used by R010.",
+                )
+            )
+
+        supplied = {
+            "pout": project.pout,
+            "vout": project.vout,
+            "iout": iout_quantity,
+        }
         missing = [name for name, value in supplied.items() if value is None]
         tolerance = context.settings.output_power_relative_tolerance
         if tolerance is None:
             missing.append("settings.output_power_relative_tolerance")
-        input_evidence = user_input_evidence(
-            "Output power, voltage, and current supplied for consistency review.", **supplied
-        )
         if missing:
             return insufficient_finding(
                 rule_id=self.rule_id,
@@ -327,7 +355,7 @@ class OutputPowerConsistencyRule(ReviewRule):
                 recommended_action=(
                     "Provide Pout, Vout, Iout, and an explicit project output-power relative tolerance.",
                 ),
-                evidence=(input_evidence,),
+                evidence=tuple(evidence_items),
             )
 
         try:
@@ -338,7 +366,7 @@ class OutputPowerConsistencyRule(ReviewRule):
                 name="vout", quantity=project.vout, target_unit="V"
             )
             iout = normalize_positive_quantity(
-                name="iout", quantity=project.iout, target_unit="A"
+                name="iout", quantity=iout_quantity, target_unit="A"
             )
         except EngineeringCalculationError:
             return insufficient_finding(
@@ -348,7 +376,7 @@ class OutputPowerConsistencyRule(ReviewRule):
                 description="Output power consistency inputs contain invalid values or units.",
                 missing_information=("valid_pout", "valid_vout", "valid_iout"),
                 recommended_action=("Correct Pout, Vout, and Iout values or units.",),
-                evidence=(input_evidence,),
+                evidence=tuple(evidence_items),
             )
 
         derived_power_value = vout.value * iout.value
@@ -394,7 +422,7 @@ class OutputPowerConsistencyRule(ReviewRule):
             severity=severity,
             title=self.title,
             description=description,
-            evidence=(input_evidence, calculation, rule_evidence),
+            evidence=(*evidence_items, calculation, rule_evidence),
             calculated_values={
                 "output_power_from_vout_iout": derived_power,
                 "output_power_relative_error": relative_error,
@@ -402,4 +430,3 @@ class OutputPowerConsistencyRule(ReviewRule):
             recommended_action=action,
             requires_engineer_confirmation=False,
         )
-

@@ -153,6 +153,9 @@ class ReviewContext(BaseModel):
     controller: ControllerReviewInput = Field(default_factory=ControllerReviewInput)
     requests: ReviewRequests = Field(default_factory=ReviewRequests)
     settings: ReviewSettings = Field(default_factory=ReviewSettings)
+    calculated_inputs: dict[ReviewParameterName, CalculationResult] = Field(
+        default_factory=dict
+    )
 
 
 class ReviewResult(BaseModel):
@@ -161,4 +164,3 @@ class ReviewResult(BaseModel):
     summary: ReviewSummary
     findings: tuple[Finding, ...]
     excluded_findings: tuple[Finding, ...] = ()
-

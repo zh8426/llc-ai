@@ -1,7 +1,18 @@
 """Pydantic request and response schemas."""
 
 from app.schemas.engineering import CalculationResult, EngineeringQuantity
-from app.schemas.project import LLCCoreProjectInput
+from app.schemas.project import (
+    ControllerInput,
+    LLCCoreProjectInput,
+    PrimarySwitchInput,
+    ProjectCalculationResponse,
+    ProjectCreate,
+    ProjectListResponse,
+    ProjectResponse,
+    ProjectReviewResponse,
+    ProjectUpdate,
+    ResonantCapacitorInput,
+)
 from app.schemas.review import (
     EvidenceItem,
     EvidenceSource,
@@ -19,6 +30,15 @@ __all__ = [
     "EvidenceSource",
     "Finding",
     "LLCCoreProjectInput",
+    "ControllerInput",
+    "PrimarySwitchInput",
+    "ProjectCalculationResponse",
+    "ProjectCreate",
+    "ProjectListResponse",
+    "ProjectResponse",
+    "ProjectReviewResponse",
+    "ProjectUpdate",
+    "ResonantCapacitorInput",
     "ReviewContext",
     "ReviewResult",
     "ReviewSettings",

@@ -1,0 +1,18 @@
+{
+  "name": "Illustrative 500 W / 48 V Half-Bridge LLC",
+  "topology": "Half-Bridge LLC",
+  "vin_min": { "value": 300, "unit": "V" },
+  "vin_nom": { "value": 360, "unit": "V" },
+  "vin_max": { "value": 420, "unit": "V" },
+  "vout": { "value": 48, "unit": "V" },
+  "pout": { "value": 500, "unit": "W" },
+  "target_efficiency": { "value": 0.94, "unit": "dimensionless" },
+  "lr": { "value": 45, "unit": "uH" },
+  "lm": { "value": 300, "unit": "uH" },
+  "cr": { "value": 47, "unit": "nF" },
+  "fsw_min": { "value": 60, "unit": "kHz" },
+  "fsw_nom": { "value": 100, "unit": "kHz" },
+  "fsw_max": { "value": 150, "unit": "kHz" },
+  "transformer_ratio": { "value": 4, "unit": "dimensionless" },
+  "rectification_type": "Diode Rectification"
+}

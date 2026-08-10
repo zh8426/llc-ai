@@ -65,3 +65,11 @@ Phase 2 引入以下项目级规则定义，不引入通用数值裕量：
 - R012 margin 可以为负值，用于表示 measured peak 已超过 rating；Phase 1 核心公式结果仍要求为有限正值。
 - 所有 `CRITICAL` 器件应力结果要求 Engineer Confirmation。
 - 任一 PASS 都是单条有限规则的结果，不构成安全、合规或量产结论。
+
+## Phase 3 API and Persistence Boundary
+
+- Project API 接受显式 `{value, unit}`，在持久化边界只校验物理维度与有限数值，并转换为 SI scalar 保存。
+- 维度正确但非正、顺序错误或工程上无效的输入允许保存，由 Calculation Engine 或 Rule Engine 返回结构化错误/Finding；维度错误不得进入数据库。
+- 如果 Project 没有显式 `iout`，但 `pout` 与 `vout` 可用于 `LLC-IOUT-V1`，Review Service 使用该确定性计算结果作为 R010 输入。除此之外不自动补充缺失参数。
+- SQLite 是开发阶段持久化实现，不改变任何 LLC 工程定义。
+- `examples/projects/500w_48v_llc.json` 仅用于软件工作流演示。其数值不是经过验证的参考设计、器件规格、实测数据或安全结论。

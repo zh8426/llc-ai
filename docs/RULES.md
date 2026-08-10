@@ -227,3 +227,8 @@ R019 只检查项目配置的字段存在性。具体单位和数值有效性由
 - `invalid_review_context`：验证负值、错误顺序和无效输入。
 - Multi-fault scenarios：验证多条规则同时触发、Evidence 完整性和执行确定性。
 
+## Phase 3 API Context Mapping
+
+REST API 从已保存的结构化 Project 构建 `ReviewContext`，不得在 Route 中实现或改写 Rule。
+
+当 `iout` 未保存而 `pout`、`vout` 有效时，Application Service 可以调用已定义的 `LLC-IOUT-V1` 生成 R010 输入。其他缺失字段继续由对应 Rule 返回 `INSUFFICIENT_DATA`。

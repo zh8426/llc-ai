@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "llc-engineering-assistant-backend"
 version = "0.1.0"
-description = "Deterministic calculation and design review backend for the LLC Engineering Assistant."
+description = "Project, deterministic calculation, and design review API for the LLC Engineering Assistant."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

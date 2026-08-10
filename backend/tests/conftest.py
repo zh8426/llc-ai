@@ -1,7 +1,14 @@
 from collections.abc import Callable
 
+import httpx
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
+from app.database import get_session
+from app.main import app
+from app.models import Base
 from app.schemas.engineering import EngineeringQuantity
 from app.schemas.review import (
     ControllerReviewInput,
@@ -17,6 +24,98 @@ from app.schemas.review import (
 
 def q(value: float, unit: str) -> EngineeringQuantity:
     return EngineeringQuantity(value=value, unit=unit)
+
+
+@pytest.fixture
+def anyio_backend() -> str:
+    return "asyncio"
+
+
+@pytest.fixture
+async def api_client() -> httpx.AsyncClient:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    testing_session = sessionmaker(bind=engine, expire_on_commit=False)
+
+    def override_get_session():
+        with testing_session() as session:
+            yield session
+
+    app.dependency_overrides[get_session] = override_get_session
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
+        yield client
+    app.dependency_overrides.pop(get_session, None)
+    Base.metadata.drop_all(engine)
+    engine.dispose()
+
+
+@pytest.fixture
+def api_project_payload() -> dict[str, object]:
+    return {
+        "name": "500 W / 48 V API fixture",
+        "vin_min": {"value": 300, "unit": "V"},
+        "vin_nom": {"value": 360, "unit": "V"},
+        "vin_max": {"value": 420, "unit": "V"},
+        "vout": {"value": 48, "unit": "V"},
+        "iout": {"value": 500 / 48, "unit": "A"},
+        "pout": {"value": 500, "unit": "W"},
+        "target_efficiency": {"value": 94, "unit": "percent"},
+        "lr": {"value": 45, "unit": "uH"},
+        "lm": {"value": 300, "unit": "uH"},
+        "cr": {"value": 47, "unit": "nF"},
+        "fsw_min": {"value": 60, "unit": "kHz"},
+        "fsw_nom": {"value": 100, "unit": "kHz"},
+        "fsw_max": {"value": 150, "unit": "kHz"},
+        "transformer_ratio": {"value": 4, "unit": "dimensionless"},
+        "dead_time": {"value": 300, "unit": "ns"},
+        "primary_switch": {
+            "manufacturer": "Fixture Semiconductor",
+            "part_number": "TEST-650V",
+            "vds_rating": {"value": 650, "unit": "V"},
+            "measured_vds_peak": {"value": 500, "unit": "V"},
+            "current_rating": {"value": 20, "unit": "A"},
+            "measured_peak_current": {"value": 10, "unit": "A"},
+            "current_temperature_condition": "Test fixture condition",
+        },
+        "resonant_capacitor": {
+            "voltage_rating": {"value": 1000, "unit": "V"},
+            "voltage_stress": {"value": 500, "unit": "V"},
+            "rms_current_rating": {"value": 12, "unit": "A"},
+            "rms_current_stress": {"value": 8, "unit": "A"},
+        },
+        "controller": {
+            "model": "Fixture Controller",
+            "frequency_min": {"value": 40, "unit": "kHz"},
+            "frequency_max": {"value": 500, "unit": "kHz"},
+        },
+        "review_requests": {
+            "zvs_analysis_requested": True,
+            "full_gain_review_requested": True,
+        },
+        "review_settings": {
+            "output_power_relative_tolerance": 0.01,
+            "measured_vds_required_margin_ratio": 0.20,
+            "gain_review_required_parameters": [
+                "vin_min",
+                "vin_max",
+                "vout",
+                "pout",
+                "lr",
+                "lm",
+                "cr",
+                "fsw_min",
+                "fsw_max",
+                "transformer_ratio",
+            ],
+        },
+    }
 
 
 @pytest.fixture
@@ -115,4 +214,3 @@ def update_review_context() -> Callable[..., ReviewContext]:
         return context.model_copy(update={section: updated_section})
 
     return update
-
