@@ -34,6 +34,11 @@ class ReviewRun(Base):
         cascade="all, delete-orphan",
         order_by="ReviewFinding.position",
     )
+    project_snapshot: Mapped["ReviewProjectSnapshot | None"] = relationship(
+        back_populates="review",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
 
 class ReviewFinding(Base):
@@ -61,3 +66,14 @@ class ReviewFinding(Base):
     report_eligible: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
     review: Mapped[ReviewRun] = relationship(back_populates="findings")
+
+
+class ReviewProjectSnapshot(Base):
+    __tablename__ = "review_project_snapshots"
+
+    review_id: Mapped[str] = mapped_column(
+        ForeignKey("review_runs.id", ondelete="CASCADE"), primary_key=True
+    )
+    project_data: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+
+    review: Mapped[ReviewRun] = relationship(back_populates="project_snapshot")

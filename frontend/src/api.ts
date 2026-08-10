@@ -61,3 +61,7 @@ export async function getLatestReview(projectId: string): Promise<Review | null>
     throw error
   }
 }
+
+export function reportUrl(projectId: string): string {
+  return `${API_BASE_URL}/projects/${projectId}/report`
+}

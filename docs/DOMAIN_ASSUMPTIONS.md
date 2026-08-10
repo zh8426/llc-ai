@@ -73,3 +73,10 @@ Phase 2 引入以下项目级规则定义，不引入通用数值裕量：
 - 如果 Project 没有显式 `iout`，但 `pout` 与 `vout` 可用于 `LLC-IOUT-V1`，Review Service 使用该确定性计算结果作为 R010 输入。除此之外不自动补充缺失参数。
 - SQLite 是开发阶段持久化实现，不改变任何 LLC 工程定义。
 - `examples/projects/500w_48v_llc.json` 仅用于软件工作流演示。其数值不是经过验证的参考设计、器件规格、实测数据或安全结论。
+
+## Phase 4 Reporting Boundary
+
+- HTML Report 只展示 Review 时保存的 Project Snapshot 和结构化 Finding，不重新执行任何工程公式或 Rule。
+- 报告中的 Calculation Version 来自 persisted `CalculationResult.formula_version` 或 calculation Evidence reference，不由 Reporting Layer 推断。
+- 报告将浮点结果格式化为最多 8 位有效数字用于阅读；该显示格式不修改数据库或 structured Review Result。
+- 中文报告是展示层，不改变 Rule Severity、Evidence、Engineering Assumption 或 Safety Boundary。

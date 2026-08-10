@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.engine import calculate_output_current
 from app.engine.exceptions import EngineeringCalculationError
 from app.models.project import Project
-from app.models.review import ReviewFinding, ReviewRun
+from app.models.review import ReviewFinding, ReviewProjectSnapshot, ReviewRun
 from app.rules import run_design_review
 from app.schemas.project import ProjectReviewResponse
 from app.schemas.review import (
@@ -27,6 +27,7 @@ from app.services.projects import (
     RESONANT_CAPACITOR_QUANTITIES,
     nested_quantity,
     project_quantity,
+    project_to_response,
 )
 
 
@@ -130,6 +131,9 @@ def run_and_store_review(session: Session, project: Project) -> ReviewRun:
         critical_count=result.summary.critical,
         insufficient_data_count=result.summary.insufficient_data,
     )
+    review.project_snapshot = ReviewProjectSnapshot(
+        project_data=project_to_response(project).model_dump(mode="json")
+    )
     for position, finding in enumerate(result.findings):
         serialized = finding.model_dump(mode="json")
         review.findings.append(
@@ -159,7 +163,10 @@ def get_review(session: Session, review_id: str) -> ReviewRun:
     statement = (
         select(ReviewRun)
         .where(ReviewRun.id == review_id)
-        .options(selectinload(ReviewRun.findings))
+        .options(
+            selectinload(ReviewRun.findings),
+            selectinload(ReviewRun.project_snapshot),
+        )
     )
     review = session.scalar(statement)
     if review is None:
@@ -173,7 +180,10 @@ def get_latest_review(session: Session, project_id: str) -> ReviewRun | None:
         .where(ReviewRun.project_id == project_id)
         .order_by(ReviewRun.created_at.desc(), ReviewRun.id.desc())
         .limit(1)
-        .options(selectinload(ReviewRun.findings))
+        .options(
+            selectinload(ReviewRun.findings),
+            selectinload(ReviewRun.project_snapshot),
+        )
     )
     return session.scalar(statement)
 

@@ -398,6 +398,28 @@ h2 {
   font-size: 0.76rem;
 }
 
+.review-actions {
+  display: grid;
+  justify-items: end;
+  gap: 9px;
+}
+
+.report-link {
+  padding: 8px 12px;
+  border: 1px solid #bcd8cd;
+  border-radius: 8px;
+  color: #1d6e53;
+  font-size: 0.76rem;
+  font-weight: 750;
+  text-decoration: none;
+  background: #f2faf6;
+}
+
+.report-link:hover {
+  border-color: #74b49b;
+  background: #e7f5ee;
+}
+
 .summary-grid {
   display: grid;
   margin: 28px 0 18px;

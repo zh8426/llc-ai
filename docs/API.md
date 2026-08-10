@@ -139,6 +139,20 @@ Pin estimate
 
 返回最近一次已持久化 Review。Project 不存在或从未运行 Review 时返回 `404`。
 
+## `GET /projects/{project_id}/report`
+
+将最近一次 Review 渲染为自包含、可打印的中文 HTML Design Review Report，成功返回 `200 text/html`。
+
+报告只消费 Review 时保存的不可变 Project Snapshot、Review Summary 和 structured Findings。Reporting Layer 不调用 Calculation Engine 或 Rule Engine，也不会把当前已修改的 Project 参数与旧 Review 混合。
+
+返回规则：
+
+- Project 不存在：`404`
+- 尚未运行 Review：`404`
+- 旧 Review 不包含 Project Snapshot：`409`，需要重新运行 Review
+
+报告包含 Project Specification、Calculation Results、Summary、Critical、Warning、Insufficient Data、Passed Checks、Information Findings、Evidence、Calculation Versions 和 Engineering Disclaimer。本阶段不生成 PDF。
+
 ## Development CORS
 
 允许的前端 Origin 由 `CORS_ORIGINS` 配置，默认：

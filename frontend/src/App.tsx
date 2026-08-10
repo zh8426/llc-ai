@@ -4,6 +4,7 @@ import {
   createProject,
   getLatestReview,
   listProjects,
+  reportUrl,
   runReview,
   updateProject,
 } from './api'
@@ -310,7 +311,17 @@ function ReviewPanel({ review }: { review: Review }) {
           <p className="eyebrow">DETERMINISTIC RULE ENGINE</p>
           <h2 id="review-title">Design Review</h2>
         </div>
-        <time>{new Date(review.created_at).toLocaleString()}</time>
+        <div className="review-actions">
+          <time>{new Date(review.created_at).toLocaleString()}</time>
+          <a
+            className="report-link"
+            href={reportUrl(review.project_id)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            查看中文 HTML 报告
+          </a>
+        </div>
       </div>
 
       <div className="summary-grid">
