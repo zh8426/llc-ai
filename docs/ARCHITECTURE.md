@@ -55,7 +55,8 @@ CSV Upload + Acquisition Metadata + Explicit ZVS Thresholds
 ```
 
 API 和 Frontend 只负责文件/元数据边界、结构化结果传输和展示；所有边沿、周期、
-dead-time、VDS 采样与分类仍由 `backend/app/waveform/` 的确定性代码完成。
+dead-time、VDS 采样与分类仍由 `backend/app/waveform/` 的确定性代码完成。Dead-time
+只在完整 Q1 周期内按 `Q1 falling < Q2 rising < Q1 next rising` 配对，并保留有效、缺失和拒绝窗口计数。
 没有 `VGS_Q2` 时，系统明确返回 dead-time `INSUFFICIENT_DATA`，不把单个 Q1 的
 关断到下一次导通间隔冒充半桥互补 dead time。
 

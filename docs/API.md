@@ -243,7 +243,10 @@ gate_high_threshold: 可选
 
 成功返回 `200`，包括 `switching_frequency`、`dead_time`、`vds_at_turn_on`、
 `zvs_status`、`confidence`、逐周期 `evidence_cycles`、gate turn-on/turn-off 时间戳
-和 limitations。`zvs_status` 只允许：
+和 limitations。`dead_time` 只在完整的 Q1 周期窗口内配对：
+`Q1 falling < Q2 rising < Q1 next rising`。它还返回
+`valid_cycle_count`、`missing_cycle_count` 和 `rejected_cycle_count`；跨周期、缺失或
+不唯一的 edge 不会被拼接成貌似合理的 dead time。`zvs_status` 只允许：
 
 ```text
 LIKELY_ZVS

@@ -177,6 +177,9 @@ export type ZVSAnalysis = {
     value: number | null
     values: number[]
     evidence: DeadTimeEvidence[]
+    valid_cycle_count: number
+    missing_cycle_count: number
+    rejected_cycle_count: number
     unit: string
     status: 'AVAILABLE' | 'INSUFFICIENT_DATA'
     formula_version: string

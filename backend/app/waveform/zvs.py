@@ -71,6 +71,13 @@ class DeadTimeEvidence:
 
 
 @dataclass(frozen=True)
+class _DeadTimePairing:
+    evidence: tuple[DeadTimeEvidence, ...]
+    missing_cycle_count: int
+    rejected_cycle_count: int
+
+
+@dataclass(frozen=True)
 class VDSAtTurnOnMeasurement:
     value: float | None
     values: tuple[float, ...]
@@ -83,9 +90,21 @@ class DeadTimeMeasurement:
     value: float | None
     values: tuple[float, ...]
     evidence: tuple[DeadTimeEvidence, ...] = ()
+    valid_cycle_count: int = 0
+    missing_cycle_count: int = 0
+    rejected_cycle_count: int = 0
     unit: str = "s"
     status: DeadTimeStatus = "INSUFFICIENT_DATA"
-    formula_version: str = "WAVEFORM-DEAD-TIME-OFF-TO-COMPLEMENTARY-ON-V1"
+    formula_version: str = "WAVEFORM-DEAD-TIME-CYCLE-WINDOW-V2"
+
+    def __post_init__(self) -> None:
+        for name, value in (
+            ("valid_cycle_count", self.valid_cycle_count),
+            ("missing_cycle_count", self.missing_cycle_count),
+            ("rejected_cycle_count", self.rejected_cycle_count),
+        ):
+            if value < 0:
+                raise WaveformSchemaError(f"{name} must not be negative")
 
 
 @dataclass(frozen=True)
@@ -99,7 +118,7 @@ class ZVSAnalysisResult:
     limitations: tuple[str, ...]
     gate_turn_on_timestamps: tuple[float, ...] = ()
     gate_turn_off_timestamps: tuple[float, ...] = ()
-    analysis_version: str = "WAVEFORM-ZVS-MVP-V1"
+    analysis_version: str = "WAVEFORM-ZVS-MVP-V2"
 
     def __post_init__(self) -> None:
         if not isfinite(self.confidence) or not 0.0 <= self.confidence <= 1.0:
@@ -132,46 +151,53 @@ def calculate_vds_at_gate_turn_on(
 def calculate_dead_time(
     primary_turn_off_edges: EdgeDetectionResult,
     complementary_turn_on_edges: EdgeDetectionResult | None,
+    *,
+    primary_turn_on_edges: EdgeDetectionResult | None = None,
 ) -> DeadTimeMeasurement:
-    """Measure primary turn-off to complementary turn-on intervals when available."""
+    """Measure dead time only inside complete primary switching-cycle windows."""
 
     if primary_turn_off_edges.direction != "falling":
         raise WaveformSchemaError("dead-time measurement requires primary falling edges")
+    if primary_turn_on_edges is not None and primary_turn_on_edges.direction != "rising":
+        raise WaveformSchemaError("dead-time cycle windows require primary rising edges")
     if complementary_turn_on_edges is None:
         return DeadTimeMeasurement(
             value=None,
             values=(),
+            missing_cycle_count=_complete_cycle_count(primary_turn_on_edges),
             status="INSUFFICIENT_DATA",
         )
     if complementary_turn_on_edges.direction != "rising":
         raise WaveformSchemaError("dead-time measurement requires complementary rising edges")
 
-    intervals: list[float] = []
-    for turn_off in primary_turn_off_edges.timestamps:
-        next_turn_on = next(
-            (timestamp for timestamp in complementary_turn_on_edges.timestamps if timestamp > turn_off),
-            None,
-        )
-        if next_turn_on is not None:
-            intervals.append(float(next_turn_on - turn_off))
-    if not intervals:
+    if primary_turn_on_edges is None:
         return DeadTimeMeasurement(value=None, values=(), status="INSUFFICIENT_DATA")
+
+    pairing = _pair_dead_time_evidence(
+        primary_turn_on_edges,
+        primary_turn_off_edges,
+        complementary_turn_on_edges,
+    )
+    intervals = tuple(item.duration for item in pairing.evidence)
+    if not intervals:
+        return DeadTimeMeasurement(
+            value=None,
+            values=(),
+            evidence=(),
+            valid_cycle_count=0,
+            missing_cycle_count=pairing.missing_cycle_count,
+            rejected_cycle_count=pairing.rejected_cycle_count,
+            status="INSUFFICIENT_DATA",
+        )
     if not np.all(np.isfinite(intervals)) or np.any(np.asarray(intervals) <= 0.0):
         raise WaveformAnalysisError("dead-time intervals must be finite and positive")
     return DeadTimeMeasurement(
         value=float(np.mean(intervals)),
-        values=tuple(intervals),
-        evidence=tuple(
-            DeadTimeEvidence(
-                primary_turn_off_time=turn_off,
-                complementary_turn_on_time=turn_on,
-                duration=duration,
-            )
-            for turn_off, turn_on, duration in _dead_time_pairs(
-                primary_turn_off_edges,
-                complementary_turn_on_edges,
-            )
-        ),
+        values=intervals,
+        evidence=pairing.evidence,
+        valid_cycle_count=len(intervals),
+        missing_cycle_count=pairing.missing_cycle_count,
+        rejected_cycle_count=pairing.rejected_cycle_count,
         status="AVAILABLE",
     )
 
@@ -247,7 +273,11 @@ def analyze_zvs(
             low_threshold=config.gate_low_threshold,
             high_threshold=config.gate_high_threshold,
         )
-    dead_time = calculate_dead_time(falling, complementary_rising)
+    dead_time = calculate_dead_time(
+        falling,
+        complementary_rising,
+        primary_turn_on_edges=rising,
+    )
     limitations = [
         "This is a waveform feature classification, not a safety certification or production approval.",
         "Requires qualified engineer review of the original probes, scaling, polarity, and test condition.",
@@ -255,6 +285,12 @@ def analyze_zvs(
     if dead_time.status == "INSUFFICIENT_DATA":
         limitations.append(
             "Complementary VGS_Q2 was not available; true half-bridge dead time was not measured."
+        )
+    elif dead_time.missing_cycle_count or dead_time.rejected_cycle_count:
+        limitations.append(
+            "Dead-time statistics use only unambiguous cycle windows; "
+            f"{dead_time.missing_cycle_count} window(s) were missing and "
+            f"{dead_time.rejected_cycle_count} window(s) were rejected."
         )
     return ZVSAnalysisResult(
         switching_frequency=calculate_switching_frequency(cycles),
@@ -312,19 +348,90 @@ def _summarize_status(statuses: Sequence[ZVSStatus]) -> tuple[ZVSStatus, float]:
     return "PARTIAL_ZVS", dominant_count / len(statuses)
 
 
-def _dead_time_pairs(
+def _pair_dead_time_evidence(
+    primary_turn_on_edges: EdgeDetectionResult,
     primary_turn_off_edges: EdgeDetectionResult,
     complementary_turn_on_edges: EdgeDetectionResult,
-) -> tuple[tuple[float, float, float], ...]:
-    pairs: list[tuple[float, float, float]] = []
-    for turn_off in primary_turn_off_edges.timestamps:
-        next_turn_on = next(
-            (timestamp for timestamp in complementary_turn_on_edges.timestamps if timestamp > turn_off),
-            None,
+) -> _DeadTimePairing:
+    """Pair edges only when one unambiguous Q2 edge is inside a Q1 cycle window."""
+
+    evidence: list[DeadTimeEvidence] = []
+    missing_cycle_count = 0
+    rejected_cycle_count = 0
+    primary_fall_position = 0
+    complementary_rise_position = 0
+
+    for cycle_start, cycle_end in zip(
+        primary_turn_on_edges.indices,
+        primary_turn_on_edges.indices[1:],
+        strict=False,
+    ):
+        skipped_falls_start = primary_fall_position
+        while (
+            primary_fall_position < len(primary_turn_off_edges.indices)
+            and primary_turn_off_edges.indices[primary_fall_position] <= cycle_start
+        ):
+            primary_fall_position += 1
+        missing_cycle_count += primary_fall_position - skipped_falls_start
+
+        primary_falls_start = primary_fall_position
+        while (
+            primary_fall_position < len(primary_turn_off_edges.indices)
+            and primary_turn_off_edges.indices[primary_fall_position] < cycle_end
+        ):
+            primary_fall_position += 1
+        primary_fall_count = primary_fall_position - primary_falls_start
+        if primary_fall_count == 0:
+            missing_cycle_count += 1
+            continue
+        if primary_fall_count > 1:
+            rejected_cycle_count += 1
+            continue
+
+        fall_position = primary_falls_start
+        fall_index = primary_turn_off_edges.indices[fall_position]
+        while (
+            complementary_rise_position < len(complementary_turn_on_edges.indices)
+            and complementary_turn_on_edges.indices[complementary_rise_position] <= fall_index
+        ):
+            complementary_rise_position += 1
+        complementary_rises_start = complementary_rise_position
+        while (
+            complementary_rise_position < len(complementary_turn_on_edges.indices)
+            and complementary_turn_on_edges.indices[complementary_rise_position] < cycle_end
+        ):
+            complementary_rise_position += 1
+        complementary_rise_count = complementary_rise_position - complementary_rises_start
+        if complementary_rise_count == 0:
+            missing_cycle_count += 1
+            continue
+        if complementary_rise_count > 1:
+            rejected_cycle_count += 1
+            continue
+
+        turn_on_position = complementary_rises_start
+        turn_off = primary_turn_off_edges.timestamps[fall_position]
+        complementary_turn_on = complementary_turn_on_edges.timestamps[turn_on_position]
+        evidence.append(
+            DeadTimeEvidence(
+                primary_turn_off_time=turn_off,
+                complementary_turn_on_time=complementary_turn_on,
+                duration=float(complementary_turn_on - turn_off),
+            )
         )
-        if next_turn_on is not None:
-            pairs.append((turn_off, next_turn_on, next_turn_on - turn_off))
-    return tuple(pairs)
+
+    missing_cycle_count += len(primary_turn_off_edges.indices) - primary_fall_position
+    return _DeadTimePairing(
+        evidence=tuple(evidence),
+        missing_cycle_count=missing_cycle_count,
+        rejected_cycle_count=rejected_cycle_count,
+    )
+
+
+def _complete_cycle_count(primary_turn_on_edges: EdgeDetectionResult | None) -> int:
+    if primary_turn_on_edges is None:
+        return 0
+    return max(len(primary_turn_on_edges.indices) - 1, 0)
 
 
 def _validate_aligned_signals(

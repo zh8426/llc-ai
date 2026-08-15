@@ -42,6 +42,9 @@ class DeadTimeResponse(BaseModel):
     value: float | None = Field(default=None, allow_inf_nan=False)
     values: tuple[float, ...]
     evidence: tuple[DeadTimeEvidenceResponse, ...]
+    valid_cycle_count: int = Field(default=0, ge=0)
+    missing_cycle_count: int = Field(default=0, ge=0)
+    rejected_cycle_count: int = Field(default=0, ge=0)
     unit: Literal["s"]
     status: Literal["AVAILABLE", "INSUFFICIENT_DATA"]
     formula_version: str = Field(min_length=1)

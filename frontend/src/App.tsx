@@ -835,6 +835,7 @@ function WaveformPanel() {
             <div><span>开关频率</span><strong>{result.switching_frequency ? `${result.switching_frequency.value.toPrecision(8)} Hz` : '数据不足'}</strong></div>
             <div><span>VDS at turn-on 平均值</span><strong>{result.vds_at_turn_on?.value === null || result.vds_at_turn_on === null ? '数据不足' : `${result.vds_at_turn_on.value.toPrecision(8)} V`}</strong></div>
             <div><span>Dead time</span><strong>{result.dead_time.value === null ? '数据不足' : `${(result.dead_time.value * 1e9).toPrecision(8)} ns`}</strong></div>
+            <div><span>Dead-time 配对</span><strong>{result.dead_time.valid_cycle_count} 有效 / {result.dead_time.missing_cycle_count} 缺失 / {result.dead_time.rejected_cycle_count} 拒绝</strong></div>
             <div><span>证据周期</span><strong>{result.evidence_cycles.length}</strong></div>
           </div>
           {csvText && (

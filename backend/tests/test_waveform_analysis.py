@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Literal
 
 import numpy as np
 import pytest
@@ -158,12 +159,26 @@ def zvs_config() -> ZVSAnalyzerConfig:
     )
 
 
+def explicit_edges(
+    direction: Literal["rising", "falling"], indices: tuple[int, ...]
+) -> EdgeDetectionResult:
+    return EdgeDetectionResult(
+        direction=direction,
+        indices=indices,
+        timestamps=tuple(index * 1e-6 for index in indices),
+        low_threshold=3.0,
+        high_threshold=9.0,
+        threshold_source="explicit",
+    )
+
+
 def test_zvs_analysis_classifies_clean_zvs_with_cycle_evidence() -> None:
     csv_text, metadata = zvs_csv_fixture(vds_turn_on_values=(2.0, 2.0, 2.0))
 
     result = analyze_zvs_csv(csv_text, metadata, zvs_config())
 
     assert result.zvs_status == "LIKELY_ZVS"
+    assert result.analysis_version == "WAVEFORM-ZVS-MVP-V2"
     assert result.confidence == 1.0
     assert result.switching_frequency is not None
     assert result.switching_frequency.value == pytest.approx(100_000.0)
@@ -203,7 +218,50 @@ def test_dead_time_is_available_only_with_complementary_gate_edges() -> None:
 
     assert result.dead_time.status == "AVAILABLE"
     assert result.dead_time.value == pytest.approx(0.5e-6)
-    assert result.dead_time.values == pytest.approx((0.5e-6,) * 4)
+    assert result.dead_time.values == pytest.approx((0.5e-6,) * 3)
+    assert result.dead_time.valid_cycle_count == 3
+    assert result.dead_time.missing_cycle_count == 1
+    assert result.dead_time.rejected_cycle_count == 0
+    assert result.dead_time.formula_version == "WAVEFORM-DEAD-TIME-CYCLE-WINDOW-V2"
+
+
+def test_dead_time_does_not_pair_across_a_missing_cycle() -> None:
+    primary_rising = explicit_edges("rising", (0, 100, 200, 300, 400))
+    primary_falling = explicit_edges("falling", (75, 175, 275, 375))
+    complementary_rising = explicit_edges("rising", (80, 280))
+
+    result = calculate_dead_time(
+        primary_falling,
+        complementary_rising,
+        primary_turn_on_edges=primary_rising,
+    )
+
+    assert result.status == "AVAILABLE"
+    assert result.values == pytest.approx((5e-6, 5e-6))
+    assert result.valid_cycle_count == 2
+    assert result.missing_cycle_count == 2
+    assert result.rejected_cycle_count == 0
+    assert [item.complementary_turn_on_time for item in result.evidence] == pytest.approx(
+        (80e-6, 280e-6)
+    )
+
+
+def test_dead_time_rejects_multiple_complementary_edges_in_one_cycle() -> None:
+    primary_rising = explicit_edges("rising", (0, 100, 200, 300, 400))
+    primary_falling = explicit_edges("falling", (75, 175, 275, 375))
+    complementary_rising = explicit_edges("rising", (80, 90, 180, 280))
+
+    result = calculate_dead_time(
+        primary_falling,
+        complementary_rising,
+        primary_turn_on_edges=primary_rising,
+    )
+
+    assert result.status == "AVAILABLE"
+    assert result.values == pytest.approx((5e-6, 5e-6))
+    assert result.valid_cycle_count == 2
+    assert result.missing_cycle_count == 1
+    assert result.rejected_cycle_count == 1
 
 
 def test_dead_time_without_complementary_gate_is_explicitly_insufficient() -> None:

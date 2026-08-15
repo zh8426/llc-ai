@@ -109,6 +109,9 @@ def _zvs_to_response(result: ZVSAnalysisResult) -> ZVSAnalysisResponse:
                 )
                 for item in result.dead_time.evidence
             ),
+            valid_cycle_count=result.dead_time.valid_cycle_count,
+            missing_cycle_count=result.dead_time.missing_cycle_count,
+            rejected_cycle_count=result.dead_time.rejected_cycle_count,
             unit="s",
             status=result.dead_time.status,
             formula_version=result.dead_time.formula_version,
