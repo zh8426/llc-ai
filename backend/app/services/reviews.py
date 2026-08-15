@@ -144,7 +144,8 @@ def run_and_store_review(session: Session, project: Project) -> ReviewRun:
         missing_information=list(calculation_snapshot.missing_information),
         errors=calculation_snapshot.errors,
     )
-    for position, finding in enumerate(result.findings):
+    all_findings = (*result.findings, *result.excluded_findings)
+    for position, finding in enumerate(all_findings):
         serialized = finding.model_dump(mode="json")
         review.findings.append(
             ReviewFinding(
@@ -201,7 +202,7 @@ def get_latest_review(session: Session, project_id: str) -> ReviewRun | None:
 
 
 def review_to_response(review: ReviewRun) -> ProjectReviewResponse:
-    findings = tuple(
+    stored_findings = tuple(
         Finding.model_validate(
             {
                 "rule_id": finding.rule_id,
@@ -221,6 +222,12 @@ def review_to_response(review: ReviewRun) -> ProjectReviewResponse:
         )
         for finding in review.findings
     )
+    findings = tuple(
+        finding for finding in stored_findings if finding.report_eligible
+    )
+    excluded_findings = tuple(
+        finding for finding in stored_findings if not finding.report_eligible
+    )
     return ProjectReviewResponse(
         project_id=review.project_id,
         review_id=review.id,
@@ -239,6 +246,7 @@ def review_to_response(review: ReviewRun) -> ProjectReviewResponse:
             }
         ),
         findings=findings,
+        excluded_findings=excluded_findings,
         calculation_snapshot=(
             CalculationSnapshot.model_validate(
                 {

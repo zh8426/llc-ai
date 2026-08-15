@@ -39,7 +39,7 @@ review_calculation_snapshots
 
 Project 核心电压、电流、功率、谐振腔、频率、变压器、控制器和第一版器件评审字段均使用独立列保存，不把 Project 整体保存为 JSON Blob。
 
-Review Summary、rule id、category、severity、title、description 和 Engineer Confirmation 使用可查询列。Evidence、Calculated Values、Missing Information 与 Recommended Action 是 Finding 内部的嵌套结构，使用 JSON 列保存。
+Review Summary、rule id、category、severity、title、description、Engineer Confirmation 和 `report_eligible` 使用可查询列。Evidence、Calculated Values、Missing Information 与 Recommended Action 是 Finding 内部的嵌套结构，使用 JSON 列保存。R020 隔离的 Finding 也完整持久化，并以 `report_eligible=false` 标识；API 将其放入 `excluded_findings`，Report 只消费正式 `findings`。
 
 每次运行 Review 时同时保存不可变 Project Snapshot。报告读取该 Snapshot，而不是读取之后可能已修改的当前 Project，避免规格与 Findings 失配。Snapshot 是 Review Audit Artifact；Project 当前状态仍使用结构化列作为 source of truth。
 
@@ -88,7 +88,9 @@ Persisted Project
   → R001–R019 deterministic evaluation
   → R020 Evidence Completeness Gate
   → ReviewResult
-  → ReviewRun + ordered ReviewFinding rows
+  → ReviewRun + all ordered ReviewFinding rows
+      ├── report_eligible=true
+      └── report_eligible=false (R020 excluded audit record)
   → REST response
   → Frontend grouping and display
 ```

@@ -152,4 +152,5 @@ class ProjectReviewResponse(BaseModel):
     created_at: datetime
     summary: ReviewSummary
     findings: tuple[Finding, ...]
+    excluded_findings: tuple[Finding, ...] = ()
     calculation_snapshot: CalculationSnapshot | None = None

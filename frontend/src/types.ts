@@ -96,6 +96,7 @@ export type Review = {
     insufficient_data: number
   }
   findings: Finding[]
+  excluded_findings: Finding[]
 }
 
 export type ProjectPayload = Record<string, unknown>

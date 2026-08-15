@@ -1,6 +1,10 @@
 import httpx
 import pytest
+from sqlalchemy import select
+from sqlalchemy.orm import Session, sessionmaker
 
+from app.models.review import ReviewFinding
+from app.schemas.review import Finding, ReviewResult, ReviewSummary, Severity
 from app.services import reviews as review_service
 
 
@@ -101,3 +105,76 @@ async def test_review_api_reports_incomplete_project_without_guessing_values(
         finding["severity"] != "WARNING" or finding["evidence"]
         for finding in review["findings"]
     )
+
+
+@pytest.mark.anyio
+async def test_review_persists_and_exposes_excluded_findings_without_reporting_them(
+    api_client: httpx.AsyncClient,
+    api_session_factory: sessionmaker[Session],
+    api_project_payload: dict[str, object],
+    monkeypatch,
+) -> None:
+    excluded = Finding(
+        rule_id="LLC-R999",
+        category="Audit fixture",
+        severity=Severity.WARNING,
+        title="Unsupported warning must remain auditable",
+        description="This warning has no evidence and must not enter the report.",
+        requires_engineer_confirmation=True,
+        report_eligible=False,
+    )
+    gate = Finding(
+        rule_id="LLC-R020",
+        category="Evidence completeness",
+        severity=Severity.WARNING,
+        title="Evidence completeness gate",
+        description="One finding was excluded from the formal result.",
+        evidence=(
+            {
+                "source": "rule_definition",
+                "description": "R020 requires evidence for WARNING findings.",
+                "references": ["LLC-R999"],
+            },
+        ),
+        requires_engineer_confirmation=True,
+    )
+    result = ReviewResult(
+        summary=ReviewSummary.model_validate(
+            {
+                "pass": 0,
+                "info": 0,
+                "warning": 1,
+                "critical": 0,
+                "insufficient_data": 0,
+            }
+        ),
+        findings=(gate,),
+        excluded_findings=(excluded,),
+    )
+    monkeypatch.setattr(review_service, "run_design_review", lambda _context: result)
+    project = (await api_client.post("/projects", json=api_project_payload)).json()
+
+    run_response = await api_client.post(f"/projects/{project['id']}/review")
+    latest_response = await api_client.get(f"/projects/{project['id']}/review")
+    report_response = await api_client.get(f"/projects/{project['id']}/report")
+
+    assert run_response.status_code == 201
+    response = run_response.json()
+    assert [finding["rule_id"] for finding in response["findings"]] == ["LLC-R020"]
+    assert [
+        finding["rule_id"] for finding in response["excluded_findings"]
+    ] == ["LLC-R999"]
+    assert response["excluded_findings"][0]["report_eligible"] is False
+    assert latest_response.json() == response
+
+    with api_session_factory() as session:
+        stored = session.scalars(
+            select(ReviewFinding).order_by(ReviewFinding.position)
+        ).all()
+    assert [(finding.rule_id, finding.report_eligible) for finding in stored] == [
+        ("LLC-R020", True),
+        ("LLC-R999", False),
+    ]
+    assert report_response.status_code == 200
+    assert "LLC-R020" in report_response.text
+    assert "Unsupported warning must remain auditable" not in report_response.text

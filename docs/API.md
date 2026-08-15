@@ -130,6 +130,7 @@ Pin estimate
     "insufficient_data": 3
   },
   "findings": [],
+  "excluded_findings": [],
   "calculation_snapshot": {
     "project_id": "...",
     "calculated_at": "2026-08-15T00:00:00Z",
@@ -143,7 +144,9 @@ Pin estimate
 
 如果 Project 未显式保存 `iout`，但 `pout` 和 `vout` 有效，R010 使用 Calculation Snapshot 中的 `LLC-IOUT-V1` 结果。不会补充其他缺失工程参数、器件额定值、测量值或项目裕量。
 
-正式 `findings` 只包含通过 R020 Evidence Gate 的结果。
+正式 `findings` 只包含通过 R020 Evidence Gate 的结果。未通过 Gate 的原始
+Finding 会完整持久化，并在 `excluded_findings` 中返回；这些条目的
+`report_eligible` 固定为 `false`，不会进入正式 HTML Report。
 
 ## `GET /projects/{project_id}/review`
 

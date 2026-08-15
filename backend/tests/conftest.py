@@ -1,9 +1,9 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 
 import httpx
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import get_session
@@ -40,7 +40,7 @@ def anyio_backend() -> str:
 
 
 @pytest.fixture
-async def api_client() -> httpx.AsyncClient:
+def api_session_factory() -> Iterator[sessionmaker[Session]]:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -49,8 +49,19 @@ async def api_client() -> httpx.AsyncClient:
     Base.metadata.create_all(engine)
     testing_session = sessionmaker(bind=engine, expire_on_commit=False)
 
+    yield testing_session
+
+    Base.metadata.drop_all(engine)
+    engine.dispose()
+
+
+@pytest.fixture
+async def api_client(
+    api_session_factory: sessionmaker[Session],
+) -> httpx.AsyncClient:
+
     def override_get_session():
-        with testing_session() as session:
+        with api_session_factory() as session:
             yield session
 
     app.dependency_overrides[get_session] = override_get_session
@@ -60,8 +71,6 @@ async def api_client() -> httpx.AsyncClient:
     ) as client:
         yield client
     app.dependency_overrides.pop(get_session, None)
-    Base.metadata.drop_all(engine)
-    engine.dispose()
 
 
 @pytest.fixture
