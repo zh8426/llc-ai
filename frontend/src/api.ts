@@ -2,6 +2,25 @@ import type { Project, ProjectPayload, Review } from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
 
+class ApiRequestError extends Error {
+  readonly status: number
+  readonly detail: string
+
+  constructor(status: number, detail: string) {
+    const messages: Record<number, string> = {
+      400: '请求内容无效，请检查输入。',
+      404: '请求的项目或评审记录不存在。',
+      409: '当前记录缺少生成结果所需的历史数据。',
+      422: '输入数据格式或单位不正确，请检查后重试。',
+      500: '后端服务发生错误，请稍后重试。',
+    }
+    super(messages[status] ?? `请求失败（HTTP ${status}）。`)
+    this.name = 'ApiRequestError'
+    this.status = status
+    this.detail = detail
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
@@ -19,7 +38,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     } catch {
       // Keep the HTTP status when the server does not return JSON.
     }
-    throw new Error(detail)
+    throw new ApiRequestError(response.status, detail)
   }
 
   return (await response.json()) as T
@@ -55,7 +74,11 @@ export async function getLatestReview(projectId: string): Promise<Review | null>
   try {
     return await request<Review>(`/projects/${projectId}/review`)
   } catch (error) {
-    if (error instanceof Error && error.message.includes('No review has been run')) {
+    if (
+      error instanceof ApiRequestError &&
+      error.status === 404 &&
+      error.detail.includes('No review has been run')
+    ) {
       return null
     }
     throw error

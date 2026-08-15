@@ -610,6 +610,47 @@ h2 {
   background: #18362d;
 }
 
+.data-list {
+  display: grid;
+  margin: 7px 0 0;
+  gap: 6px;
+}
+
+.data-list > div {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) minmax(120px, 1fr);
+  gap: 12px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: #f3f7f5;
+}
+
+.data-list dt {
+  color: #5f726b;
+}
+
+.data-list dd {
+  margin: 0;
+  color: #243f36;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.compact-data-list {
+  margin: 8px 0 10px;
+}
+
+.empty-detail {
+  color: #7b8984;
+  font-style: italic;
+}
+
+.finding-trace {
+  margin-top: 18px;
+  color: #74847e;
+  font-size: 0.72rem;
+}
+
 .confirmation {
   margin-top: 17px;
   padding: 10px 12px;
@@ -692,5 +733,10 @@ h2 {
 
   .finding-body {
     padding-left: 18px;
+  }
+
+  .data-list > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
   }
 }

@@ -102,6 +102,10 @@ Persisted Project
 ```
 
 Frontend 不执行 LLC 公式或 Engineering Rule，只负责结构化输入与结果展示。
+Finding 的“输入数据”区域从 `source=user_input` 的 Evidence values 提取；“计算数据”
+直接展示 persisted `calculated_values`。该展示层不推导新数值，不修改 Severity，并保留
+Rule ID 与 Formula Version 供追溯。用户界面使用中文产品术语，内部 TypeScript、API
+字段和值枚举保持英文。
 
 ## Reporting Boundary
 

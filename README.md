@@ -249,6 +249,7 @@ GitHub Actions 会在 push 和 pull request 时自动执行相同的后端与前
 - `docs/RULES.md`：Design Review Rule 定义
 - `docs/API.md`：REST API 契约
 - `docs/SAFETY.md`：安全策略和禁止行为
+- `docs/TERMINOLOGY_ZH.md`：用户界面与报告的中文产品术语
 
 新增公式、规则、API、架构决策或安全策略时，必须同步对应文档。
 
