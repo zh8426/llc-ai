@@ -1,6 +1,6 @@
 # Architecture
 
-## 当前范围：Phase 4
+## 当前范围：Phase 5
 
 Phase 3 形成第一个 Project Design Review Web Workflow：
 
@@ -25,6 +25,22 @@ Review-time Project Snapshot + persisted Review Findings
 
 Backend 和 Frontend 仍可独立启动。Engineering Engine 与 Rule Engine 不依赖 FastAPI、SQLAlchemy、Frontend、网络或 LLM。
 
+Phase 5 新增独立的确定性 Waveform Engine：
+
+```text
+CSV + Acquisition Metadata
+  → schema validation
+  → unit / probe ratio / polarity normalization
+  → invalid sample filtering
+  → Schmitt edge detection
+  → switching cycle segmentation
+  → frequency / absolute peak / RMS features
+```
+
+`backend/app/waveform/` 不依赖 FastAPI、SQLAlchemy、Rule Engine、Frontend、网络或
+LLM。Phase 5 只建立波形加载和基础信号处理能力，尚不持久化波形，也不输出 ZVS、
+dead time、VDS at turn-on 或故障诊断结论。
+
 ## Persistence
 
 Phase 3–4 与 Hardening 启用五张表：
@@ -44,8 +60,8 @@ Review Summary、rule id、category、severity、title、description、Engineer 
 Finding Evidence 中的测量或应力数据使用统一 `MeasurementEvidence`，把数值与
 `source_type`、source/channel reference、test condition、timestamp 和人工确认状态
 一起保存。现有 Project 表单输入保持原有结构化 SI 列作为 source of truth；Review
-时将相关值明确标记为未验证的 `user_input`。该基础模型不包含 Waveform 文件、
-信号处理或 ZVS 分类。
+时将相关值明确标记为未验证的 `user_input`。该 Persistence 基础模型尚不保存
+Waveform 文件、信号处理结果或 ZVS 分类。
 
 每次运行 Review 时同时保存不可变 Project Snapshot。报告读取该 Snapshot，而不是读取之后可能已修改的当前 Project，避免规格与 Findings 失配。Snapshot 是 Review Audit Artifact；Project 当前状态仍使用结构化列作为 source of truth。
 
@@ -125,4 +141,6 @@ Summary 和 Calculation Snapshot 摘要，Review ID endpoint 返回完整历史 
 
 ## Phase Boundary
 
-Phase 4 不包含：PDF Report、Waveform、ZVS classification、Datasheet/BOM Parser、Fault Diagnosis、LLM/RAG/AI Chat、Authentication、Payment 或 Cloud Deployment。
+Phase 5 不包含：Waveform API/UI、持久化、ZVS classification、dead time、VDS at
+turn-on、PDF Report、Datasheet/BOM Parser、Fault Diagnosis、LLM/RAG/AI Chat、
+Authentication、Payment 或 Cloud Deployment。

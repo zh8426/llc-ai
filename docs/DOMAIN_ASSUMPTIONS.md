@@ -83,3 +83,26 @@ Phase 2 引入以下项目级规则定义，不引入通用数值裕量：
 - 报告中的 Calculation Version 来自 persisted `CalculationResult.formula_version` 或 calculation Evidence reference，不由 Reporting Layer 推断。
 - 报告将浮点结果格式化为最多 8 位有效数字用于阅读；该显示格式不修改数据库或 structured Review Result。
 - 中文报告是展示层，不改变 Rule Severity、Evidence、Engineering Assumption 或 Safety Boundary。
+
+## Phase 5 Waveform Processing Definitions
+
+- 第一版 CSV 必需列固定为 `time`、`VGS_Q1`、`VDS_Q1`、`IRES`。时间归一化为秒，
+  电压归一化为伏特，电流归一化为安培。
+- `sample_rate` 的单位固定为 Hz。它是采集元数据，不替代 CSV 的 `time`；周期与频率
+  均使用实际时间戳计算，因此允许严格递增的非均匀采样。
+- 通道样本按 `normalized = unit_converted × probe_ratio × polarity` 归一化。
+  `probe_ratio` 必须大于零，`polarity` 只能为 `1` 或 `-1`。
+- 可选的 `bandwidth_hz` 只作为采集元数据保留；Phase 5 不根据带宽字段修改波形。
+- 任一必需通道或时间为 NaN/Infinity 的整行样本会被丢弃，并在 `discarded_samples`
+  中记录数量。过滤后时间必须严格递增；系统不插值、不猜测缺失值。
+- `WAVEFORM-SCHMITT-EDGE-V1` 使用 Schmitt 状态机。未显式提供阈值时，先取信号
+  第 5 与第 95 百分位作为稳健低/高电平，再以该跨度的 30% 和 70% 作为低/高阈值。
+  调用方可同时显式提供两个阈值，结果会记录阈值及其来源。
+- 边沿时间定义为样本首次跨过对应 Schmitt 阈值的时间戳；Phase 5 不做亚采样插值。
+- `WAVEFORM-FSW-MEAN-PERIOD-V1` 定义为相邻上升沿完整周期平均时长的倒数。
+- `WAVEFORM-ABS-PEAK-V1` 定义为样本绝对值最大值。
+- `WAVEFORM-RMS-SAMPLE-V1` 用于未提供时间轴的等权样本 RMS；提供时间轴时使用
+  `WAVEFORM-RMS-TIME-WEIGHTED-V1` 梯形积分，以支持非均匀采样。
+- `WAVEFORM-ANALYSIS-MVP-V1` 串联 CSV 加载、`VGS_Q1` 边沿检测、周期分段、
+  开关频率及所有已加载通道的 Peak/RMS；它不产生 ZVS 分类。
+- 所有 Phase 5 输出都是确定性信号特征，不是 ZVS、安全、器件合规或故障结论。
