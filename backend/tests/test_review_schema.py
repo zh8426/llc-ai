@@ -1,7 +1,10 @@
+from datetime import UTC, datetime
+
 import pytest
 from pydantic import ValidationError
 
 from app.schemas.engineering import EngineeringQuantity
+from app.schemas.evidence import MeasurementEvidence, MeasurementSourceType
 from app.schemas.review import (
     EvidenceItem,
     EvidenceSource,
@@ -92,3 +95,43 @@ def test_review_context_rejects_undeclared_data() -> None:
     with pytest.raises(ValidationError):
         ReviewContext.model_validate({"unverified_safety_margin": 0.2})
 
+
+def test_measurement_evidence_preserves_value_provenance_and_conditions() -> None:
+    timestamp = datetime.now(UTC)
+    evidence = MeasurementEvidence(
+        value=EngineeringQuantity(value=580, unit="V"),
+        source_type=MeasurementSourceType.WAVEFORM_DERIVED,
+        source_id="waveform-id",
+        channel="VDS_Q1",
+        test_condition={
+            "vin": EngineeringQuantity(value=420, unit="V"),
+            "operating_state": "full_load",
+        },
+        timestamp=timestamp,
+        human_verified=True,
+    )
+
+    serialized = evidence.model_dump(mode="json")
+
+    assert serialized["source_type"] == "waveform_derived"
+    assert serialized["source_id"] == "waveform-id"
+    assert serialized["channel"] == "VDS_Q1"
+    assert serialized["test_condition"]["vin"] == {"value": 420.0, "unit": "V"}
+    assert serialized["timestamp"] == timestamp.isoformat().replace("+00:00", "Z")
+    assert serialized["human_verified"] is True
+
+
+@pytest.mark.parametrize("missing_field", ["source_id", "channel"])
+def test_waveform_derived_measurement_requires_traceable_reference(
+    missing_field: str,
+) -> None:
+    payload: dict[str, object] = {
+        "value": {"value": 580, "unit": "V"},
+        "source_type": "waveform_derived",
+        "source_id": "waveform-id",
+        "channel": "VDS_Q1",
+    }
+    payload[missing_field] = None
+
+    with pytest.raises(ValidationError, match=missing_field):
+        MeasurementEvidence.model_validate(payload)

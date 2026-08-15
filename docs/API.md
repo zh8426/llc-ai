@@ -148,6 +148,11 @@ Pin estimate
 Finding 会完整持久化，并在 `excluded_findings` 中返回；这些条目的
 `report_eligible` 固定为 `false`，不会进入正式 HTML Report。
 
+R012–R015 的相关 Evidence 可包含 `measurements` 映射。每项均保留明确的
+`value + unit` 和 provenance 字段。当前页面手工填写的数据标记为
+`source_type=user_input`、`human_verified=false`；API 不会自动把它升级为
+datasheet 或 waveform-derived evidence。
+
 ## `GET /projects/{project_id}/review`
 
 返回最近一次已持久化 Review。Project 不存在或从未运行 Review 时返回 `404`。

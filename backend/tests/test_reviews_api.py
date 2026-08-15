@@ -55,6 +55,10 @@ async def test_review_api_runs_persists_and_returns_latest_review(
         "LLC-IOUT-V1",
         "LLC-PIN-V1",
     }
+    r012 = next(finding for finding in review["findings"] if finding["rule_id"] == "LLC-R012")
+    measured_vds = r012["evidence"][0]["measurements"]["measured_vds_peak"]
+    assert measured_vds["source_type"] == "user_input"
+    assert measured_vds["human_verified"] is False
     assert latest_response.status_code == 200
     assert latest_response.json() == review
 

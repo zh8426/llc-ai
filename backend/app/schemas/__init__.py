@@ -1,6 +1,12 @@
 """Pydantic request and response schemas."""
 
 from app.schemas.engineering import CalculationResult, EngineeringQuantity
+from app.schemas.evidence import (
+    EvidenceItem,
+    EvidenceSource,
+    MeasurementEvidence,
+    MeasurementSourceType,
+)
 from app.schemas.project import (
     ControllerInput,
     LLCCoreProjectInput,
@@ -14,8 +20,6 @@ from app.schemas.project import (
     ResonantCapacitorInput,
 )
 from app.schemas.review import (
-    EvidenceItem,
-    EvidenceSource,
     Finding,
     ReviewContext,
     ReviewResult,
@@ -29,6 +33,8 @@ __all__ = [
     "EvidenceItem",
     "EvidenceSource",
     "Finding",
+    "MeasurementEvidence",
+    "MeasurementSourceType",
     "LLCCoreProjectInput",
     "ControllerInput",
     "PrimarySwitchInput",

@@ -67,7 +67,18 @@ export type Evidence = {
   source: string
   description: string
   values: Record<string, EngineeringQuantity>
+  measurements: Record<string, MeasurementEvidence>
   references: string[]
+}
+
+export type MeasurementEvidence = {
+  value: EngineeringQuantity
+  source_type: 'user_input' | 'waveform_derived' | 'datasheet' | 'calculated' | 'imported'
+  source_id: string | null
+  channel: string | null
+  test_condition: Record<string, EngineeringQuantity | string>
+  timestamp: string | null
+  human_verified: boolean
 }
 
 export type Finding = {

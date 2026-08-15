@@ -1,4 +1,5 @@
 from app.schemas.engineering import CalculationResult, EngineeringQuantity
+from app.schemas.evidence import MeasurementEvidence, MeasurementSourceType
 from app.schemas.review import (
     EvidenceItem,
     EvidenceSource,
@@ -21,6 +22,28 @@ def user_input_evidence(
         source=EvidenceSource.USER_INPUT,
         description=description,
         values=available_values(**values),
+    )
+
+
+def user_measurement_evidence(
+    description: str,
+    measurement_names: tuple[str, ...],
+    /,
+    **values: EngineeringQuantity | None,
+) -> EvidenceItem:
+    available = available_values(**values)
+    return EvidenceItem(
+        source=EvidenceSource.USER_INPUT,
+        description=description,
+        values=available,
+        measurements={
+            name: MeasurementEvidence(
+                value=available[name],
+                source_type=MeasurementSourceType.USER_INPUT,
+            )
+            for name in measurement_names
+            if name in available
+        },
     )
 
 

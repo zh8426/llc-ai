@@ -3,6 +3,8 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.engineering import CalculationResult, EngineeringQuantity
+from app.schemas.evidence import EvidenceItem
+from app.schemas.evidence import EvidenceSource as EvidenceSource
 
 
 class Severity(StrEnum):
@@ -11,24 +13,6 @@ class Severity(StrEnum):
     WARNING = "WARNING"
     CRITICAL = "CRITICAL"
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
-
-
-class EvidenceSource(StrEnum):
-    USER_INPUT = "user_input"
-    CALCULATION = "calculation"
-    DATASHEET = "datasheet"
-    WAVEFORM = "waveform"
-    RULE_DEFINITION = "rule_definition"
-    VERIFIED_FAULT_CASE = "verified_fault_case"
-
-
-class EvidenceItem(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    source: EvidenceSource
-    description: str = Field(min_length=1)
-    values: dict[str, EngineeringQuantity] = Field(default_factory=dict)
-    references: tuple[str, ...] = ()
 
 
 class Finding(BaseModel):

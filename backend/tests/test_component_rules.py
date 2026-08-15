@@ -11,6 +11,7 @@ from app.rules.builtin import (
     ResonantCapacitorVoltageRatingRule,
 )
 from app.schemas.engineering import EngineeringQuantity
+from app.schemas.evidence import MeasurementSourceType
 from app.schemas.review import ReviewContext, Severity
 
 
@@ -63,6 +64,35 @@ def test_r012_passes_configured_measured_vds_margin(
     assert finding.calculated_values["measured_vds_margin_ratio"].value == pytest.approx(
         150 / 650
     )
+    measurement = finding.evidence[0].measurements["measured_vds_peak"]
+    assert measurement.source_type == MeasurementSourceType.USER_INPUT
+    assert measurement.human_verified is False
+
+
+@pytest.mark.parametrize(
+    ("rule", "measurement_name"),
+    [
+        (MOSFETMeasuredPeakVoltageRule(), "measured_vds_peak"),
+        (MOSFETCurrentScreeningRule(), "measured_peak_current"),
+        (ResonantCapacitorVoltageRatingRule(), "capacitor_voltage_stress"),
+        (ResonantCapacitorRMSCurrentRule(), "capacitor_rms_current_stress"),
+    ],
+)
+def test_r012_to_r015_mark_manual_stress_values_as_user_input_measurements(
+    normal_review_context: ReviewContext,
+    rule,
+    measurement_name: str,
+) -> None:
+    finding = rule.evaluate(normal_review_context)
+    measurements = {
+        name: measurement
+        for evidence in finding.evidence
+        for name, measurement in evidence.measurements.items()
+    }
+
+    assert measurements[measurement_name].source_type == MeasurementSourceType.USER_INPUT
+    assert measurements[measurement_name].source_id is None
+    assert measurements[measurement_name].human_verified is False
 
 
 def test_r012_is_critical_above_absolute_rating(
@@ -292,4 +322,3 @@ def test_r016_handles_missing_invalid_and_unordered_controller_range(
     assert rule.evaluate(missing).severity == Severity.INSUFFICIENT_DATA
     assert rule.evaluate(invalid).severity == Severity.INSUFFICIENT_DATA
     assert rule.evaluate(unordered).severity == Severity.INSUFFICIENT_DATA
-

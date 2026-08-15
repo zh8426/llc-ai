@@ -41,6 +41,12 @@ Project 核心电压、电流、功率、谐振腔、频率、变压器、控制
 
 Review Summary、rule id、category、severity、title、description、Engineer Confirmation 和 `report_eligible` 使用可查询列。Evidence、Calculated Values、Missing Information 与 Recommended Action 是 Finding 内部的嵌套结构，使用 JSON 列保存。R020 隔离的 Finding 也完整持久化，并以 `report_eligible=false` 标识；API 将其放入 `excluded_findings`，Report 只消费正式 `findings`。
 
+Finding Evidence 中的测量或应力数据使用统一 `MeasurementEvidence`，把数值与
+`source_type`、source/channel reference、test condition、timestamp 和人工确认状态
+一起保存。现有 Project 表单输入保持原有结构化 SI 列作为 source of truth；Review
+时将相关值明确标记为未验证的 `user_input`。该基础模型不包含 Waveform 文件、
+信号处理或 ZVS 分类。
+
 每次运行 Review 时同时保存不可变 Project Snapshot。报告读取该 Snapshot，而不是读取之后可能已修改的当前 Project，避免规格与 Findings 失配。Snapshot 是 Review Audit Artifact；Project 当前状态仍使用结构化列作为 source of truth。
 
 Review 还会保存同一次运行生成的 Calculation Snapshot，包括计算引擎版本、时间、完整六项 `CalculationResult`、缺失信息和公式错误。`/calculate` 与 Review 共用 `services/calculations.py::calculate_project()` 这一条 canonical execution path。R005–R010 从传入 ReviewContext 的快照结果读取基础计算，不重复执行 Phase 1 公式。

@@ -47,6 +47,22 @@ verified_fault_case
 
 当前 Phase 2 尚未实现 Datasheet Parser 或 Waveform Engine，因此器件额定值和用户声明的测量值仍标记为 `user_input`，不得描述为系统已验证的数据手册或波形证据。
 
+R012–R015 的用户声明应力值还会保存最小 `MeasurementEvidence`：
+
+```text
+value + unit
+source_type
+source_id
+channel
+test_condition
+timestamp
+human_verified
+```
+
+当前 Project 表单数据使用 `source_type=user_input`、`human_verified=false`。未来只有
+`waveform_derived` 数据才能引用 waveform `source_id` 和 channel；存在 measured 字段
+本身不表示已经验证波形、探头、带宽或测试条件。
+
 所有 WARNING / CRITICAL 必须至少包含一项 Evidence。R020 会将违反该条件的 Finding 标记为 `report_eligible = false`，放入 `excluded_findings`，禁止其进入正式 findings/report 数据流。
 
 ## Configurable Settings

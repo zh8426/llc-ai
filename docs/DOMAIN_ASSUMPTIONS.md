@@ -61,6 +61,9 @@ Phase 2 引入以下项目级规则定义，不引入通用数值裕量：
 
 - Phase 2 中的器件 rating、stress 和 measured peak 均来自用户结构化输入，因此 Evidence Source 标记为 `user_input`。
 - `measured_*` 字段表示用户声明的数据含义，不代表系统已经验证示波器文件、探头配置或测试条件。
+- Review Evidence 中的 `MeasurementEvidence.source_type=user_input` 与
+  `human_verified=false` 是当前手工输入的 provenance 标记，不会把该数据升级为
+  verified waveform evidence。
 - Datasheet Parser 和 Waveform Engine 尚未实现，不得将用户输入升级描述为 verified datasheet 或 waveform evidence。
 - R012 margin 可以为负值，用于表示 measured peak 已超过 rating；Phase 1 核心公式结果仍要求为有限正值。
 - 所有 `CRITICAL` 器件应力结果要求 Engineer Confirmation。

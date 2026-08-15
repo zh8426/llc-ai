@@ -47,6 +47,8 @@ async def test_report_renders_chinese_self_contained_html_from_review_snapshot(
         )
     )
     assert "LLC-R020" in response.text
+    assert "source_type=user_input" in response.text
+    assert "human_verified=false" in response.text
     assert "Engineering Disclaimer" in response.text
     assert "The reporting layer did not recalculate engineering results." in response.text
 

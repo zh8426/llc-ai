@@ -8,6 +8,7 @@ from app.rules.helpers import (
     insufficient_finding,
     rule_definition_evidence,
     user_input_evidence,
+    user_measurement_evidence,
 )
 from app.schemas.engineering import CalculationResult, EngineeringQuantity
 from app.schemas.review import Finding, ReviewContext, Severity
@@ -105,8 +106,10 @@ class MOSFETMeasuredPeakVoltageRule(ReviewRule):
         measured_peak = context.mosfet.measured_vds_peak
         supplied = {"mosfet_vds_rating": rating, "measured_vds_peak": measured_peak}
         missing = tuple(name for name, value in supplied.items() if value is None)
-        input_evidence = user_input_evidence(
-            "User-provided MOSFET VDS rating and measured peak voltage.", **supplied
+        input_evidence = user_measurement_evidence(
+            "User-provided MOSFET VDS rating and measured peak voltage.",
+            ("measured_vds_peak",),
+            **supplied,
         )
         if missing:
             return insufficient_finding(
@@ -237,9 +240,10 @@ class MOSFETCurrentScreeningRule(ReviewRule):
         if condition is None:
             missing.append("mosfet.current_temperature_condition")
         evidence = (
-            user_input_evidence(
+            user_measurement_evidence(
                 "User-provided MOSFET current data. Temperature condition: "
                 + (condition or "not provided"),
+                ("measured_peak_current",),
                 measured_peak_current=measured,
                 current_rating=rating,
             ),
@@ -319,7 +323,11 @@ class ResonantCapacitorVoltageRatingRule(ReviewRule):
         supplied = {"capacitor_voltage_rating": rating, "capacitor_voltage_stress": stress}
         missing = tuple(name for name, value in supplied.items() if value is None)
         evidence = (
-            user_input_evidence("User-provided resonant capacitor voltage data.", **supplied),
+            user_measurement_evidence(
+                "User-provided resonant capacitor voltage data.",
+                ("capacitor_voltage_stress",),
+                **supplied,
+            ),
             rule_definition_evidence(
                 self.rule_id, "R014 compares supplied voltage stress with voltage rating."
             ),
@@ -395,7 +403,11 @@ class ResonantCapacitorRMSCurrentRule(ReviewRule):
         supplied = {"capacitor_rms_current_rating": rating, "capacitor_rms_current_stress": stress}
         missing = tuple(name for name, value in supplied.items() if value is None)
         evidence = (
-            user_input_evidence("User-provided resonant capacitor RMS current data.", **supplied),
+            user_measurement_evidence(
+                "User-provided resonant capacitor RMS current data.",
+                ("capacitor_rms_current_stress",),
+                **supplied,
+            ),
             rule_definition_evidence(
                 self.rule_id, "R015 compares supplied RMS current stress with RMS current rating."
             ),

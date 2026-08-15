@@ -5,6 +5,7 @@ from app.schemas.engineering import (
     CalculationSnapshot,
     EngineeringQuantity,
 )
+from app.schemas.evidence import MeasurementEvidence
 from app.schemas.project import ProjectResponse, ProjectReviewResponse
 from app.schemas.review import EvidenceItem, Finding, Severity
 
@@ -91,12 +92,46 @@ def _evidence_item(evidence: EvidenceItem) -> str:
     references = "".join(
         f"<code>{_text(reference)}</code>" for reference in evidence.references
     )
+    measurements = "".join(
+        _measurement_evidence(name, measurement)
+        for name, measurement in evidence.measurements.items()
+    )
     return (
         '<li class="evidence-item">'
         f'<span class="source">{_text(evidence.source.value)}</span>'
         f"<p>{_text(evidence.description)}</p>"
         f"{'<ul>' + values + '</ul>' if values else ''}"
+        f"{'<ul class=\"measurement-list\">' + measurements + '</ul>' if measurements else ''}"
         f"{'<div class=\"references\">' + references + '</div>' if references else ''}"
+        "</li>"
+    )
+
+
+def _measurement_evidence(name: str, measurement: MeasurementEvidence) -> str:
+    details = [
+        f"source_type={measurement.source_type.value}",
+        f"human_verified={str(measurement.human_verified).lower()}",
+    ]
+    if measurement.source_id is not None:
+        details.append(f"source_id={measurement.source_id}")
+    if measurement.channel is not None:
+        details.append(f"channel={measurement.channel}")
+    if measurement.timestamp is not None:
+        details.append(f"timestamp={measurement.timestamp.isoformat()}")
+    conditions = ", ".join(
+        (
+            f"{key}={_number(value.value)} {value.unit}"
+            if isinstance(value, EngineeringQuantity)
+            else f"{key}={value}"
+        )
+        for key, value in measurement.test_condition.items()
+    )
+    if conditions:
+        details.append(f"test_condition: {conditions}")
+    return (
+        "<li>"
+        f"<code>{_text(name)}</code>: {_quantity(measurement.value)}"
+        f" <small>{_text('; '.join(details))}</small>"
         "</li>"
     )
 
