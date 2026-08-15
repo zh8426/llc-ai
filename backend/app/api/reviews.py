@@ -12,7 +12,6 @@ from app.services.reviews import (
     run_and_store_review,
 )
 
-
 router = APIRouter(prefix="/projects", tags=["reviews"])
 SessionDependency = Annotated[Session, Depends(get_session)]
 

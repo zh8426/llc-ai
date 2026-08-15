@@ -14,7 +14,6 @@ from app.schemas.engineering import CalculationResult, EngineeringQuantity
 from app.schemas.project import ProjectCalculationResponse
 from app.services.projects import project_quantity
 
-
 CalculationFunction = Callable[..., CalculationResult]
 
 

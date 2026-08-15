@@ -9,7 +9,6 @@ from app.database import get_session
 from app.services.reports import ReportSnapshotMissingError, render_review_run
 from app.services.reviews import get_latest_review
 
-
 router = APIRouter(prefix="/projects", tags=["reports"])
 SessionDependency = Annotated[Session, Depends(get_session)]
 

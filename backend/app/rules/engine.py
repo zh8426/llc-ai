@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from app.rules.base import ReviewRule
 from app.rules.definitions import BUILTIN_RULES
 from app.schemas.review import (
-    Finding,
     ReviewContext,
     ReviewResult,
     ReviewSummary,
@@ -49,12 +48,14 @@ class ReviewEngine:
         findings = (*eligible, evidence_finding)
 
         counts = Counter(finding.severity for finding in findings)
-        summary = ReviewSummary(
-            pass_count=counts[Severity.PASS],
-            info=counts[Severity.INFO],
-            warning=counts[Severity.WARNING],
-            critical=counts[Severity.CRITICAL],
-            insufficient_data=counts[Severity.INSUFFICIENT_DATA],
+        summary = ReviewSummary.model_validate(
+            {
+                "pass": counts[Severity.PASS],
+                "info": counts[Severity.INFO],
+                "warning": counts[Severity.WARNING],
+                "critical": counts[Severity.CRITICAL],
+                "insufficient_data": counts[Severity.INSUFFICIENT_DATA],
+            }
         )
         return ReviewResult(
             summary=summary,
@@ -65,4 +66,3 @@ class ReviewEngine:
 
 def run_design_review(context: ReviewContext) -> ReviewResult:
     return ReviewEngine().run(context)
-

@@ -2,7 +2,6 @@ from fastapi import APIRouter, status
 
 from app.schemas.health import HealthResponse
 
-
 router = APIRouter(tags=["system"])
 
 

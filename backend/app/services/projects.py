@@ -15,7 +15,7 @@ from app.schemas.project import (
     ProjectUpdate,
     ResonantCapacitorInput,
 )
-from app.schemas.review import ReviewRequests, ReviewSettings
+from app.schemas.review import ReviewParameterName, ReviewRequests, ReviewSettings
 
 
 @dataclass(frozen=True)
@@ -341,7 +341,10 @@ def project_to_response(project: Project) -> ProjectResponse:
                 project.measured_vds_required_margin_ratio
             ),
             gain_review_required_parameters=(
-                tuple(project.gain_review_required_parameters)
+                tuple(
+                    ReviewParameterName(value)
+                    for value in project.gain_review_required_parameters
+                )
                 if project.gain_review_required_parameters is not None
                 else None
             ),

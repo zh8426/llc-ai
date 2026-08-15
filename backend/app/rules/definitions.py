@@ -22,7 +22,6 @@ from app.rules.builtin import (
     TransformerRatioRequiredRule,
 )
 
-
 BUILTIN_RULES: tuple[ReviewRule, ...] = (
     CriticalParameterCompletenessRule(),
     PositiveValuesRule(),

@@ -109,6 +109,8 @@ Backend：
 - SQLAlchemy
 - Pint
 - pytest / pytest-cov
+- Ruff
+- mypy
 
 Frontend：
 
@@ -173,6 +175,13 @@ Backend tests：
 python -m pytest
 ```
 
+Backend 静态检查：
+
+```powershell
+python -m ruff check backend
+python -m mypy backend/app
+```
+
 ### Frontend
 
 ```powershell
@@ -188,6 +197,25 @@ npm run build
 ```
 
 Vite 项目必须通过开发服务器访问，不能直接双击 `frontend/index.html`。
+
+### Quality Gate
+
+提交前应从干净安装环境执行完整质量门禁：
+
+```powershell
+# 仓库根目录
+python -m pip install -e ".[test]"
+python -m pytest
+python -m ruff check backend
+python -m mypy backend/app
+
+# Frontend
+Set-Location frontend
+npm ci
+npm run build
+```
+
+GitHub Actions 会在 push 和 pull request 时自动执行相同的后端与前端检查。
 
 ## Documentation
 
@@ -223,6 +251,8 @@ README 维护项目的长期规划和稳定使用说明，不记录每次开发�
 git status
 git diff
 python -m pytest
+python -m ruff check backend
+python -m mypy backend/app
 ```
 
 Frontend 有变更时额外执行：

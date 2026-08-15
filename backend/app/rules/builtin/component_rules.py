@@ -44,6 +44,8 @@ class MOSFETStaticVoltageScreeningRule(ReviewRule):
                 recommended_action=("Provide MOSFET VDS rating and Vin Max with units.",),
                 evidence=evidence,
             )
+        assert rating is not None
+        assert vin_max is not None
         try:
             normalized_rating = normalize_positive_quantity(
                 name="mosfet_vds_rating", quantity=rating, target_unit="V"
@@ -116,6 +118,8 @@ class MOSFETMeasuredPeakVoltageRule(ReviewRule):
                 recommended_action=("Provide MOSFET VDS rating and measured VDS peak with units.",),
                 evidence=(input_evidence,),
             )
+        assert rating is not None
+        assert measured_peak is not None
         try:
             normalized_rating = normalize_positive_quantity(
                 name="mosfet_vds_rating", quantity=rating, target_unit="V"
@@ -153,7 +157,7 @@ class MOSFETMeasuredPeakVoltageRule(ReviewRule):
         if normalized_peak.value > normalized_rating.value:
             severity = Severity.CRITICAL
             description = "Measured VDS peak exceeds the supplied MOSFET absolute VDS rating."
-            action = (
+            action: tuple[str, ...] = (
                 "Stop using this result as an acceptable operating condition and require qualified engineer review of the device stress and measurement setup.",
             )
             requires_confirmation = True
@@ -254,6 +258,8 @@ class MOSFETCurrentScreeningRule(ReviewRule):
                 recommended_action=("Provide measured peak current, rating, and temperature condition.",),
                 evidence=evidence,
             )
+        assert measured is not None
+        assert rating is not None
         try:
             normalized_measured = normalize_positive_quantity(
                 name="measured_peak_current", quantity=measured, target_unit="A"
@@ -275,7 +281,9 @@ class MOSFETCurrentScreeningRule(ReviewRule):
         if normalized_measured.value > normalized_rating.value:
             severity = Severity.CRITICAL
             description = "Measured peak current exceeds the supplied device current rating."
-            action = ("Require engineer review of current stress, rating conditions, and thermal conditions.",)
+            action: tuple[str, ...] = (
+                "Require engineer review of current stress, rating conditions, and thermal conditions.",
+            )
             requires_confirmation = True
         else:
             severity = Severity.INFO
@@ -326,6 +334,8 @@ class ResonantCapacitorVoltageRatingRule(ReviewRule):
                 recommended_action=("Provide capacitor voltage rating and measured or calculated stress.",),
                 evidence=evidence,
             )
+        assert rating is not None
+        assert stress is not None
         try:
             normalized_rating = normalize_positive_quantity(
                 name="capacitor_voltage_rating", quantity=rating, target_unit="V"
@@ -347,7 +357,9 @@ class ResonantCapacitorVoltageRatingRule(ReviewRule):
         if normalized_stress.value > normalized_rating.value:
             severity = Severity.CRITICAL
             description = "Supplied resonant capacitor voltage stress exceeds its supplied rating."
-            action = ("Require engineer review of the stress evidence and capacitor selection.",)
+            action: tuple[str, ...] = (
+                "Require engineer review of the stress evidence and capacitor selection.",
+            )
             requires_confirmation = True
         else:
             severity = Severity.INFO
@@ -398,6 +410,8 @@ class ResonantCapacitorRMSCurrentRule(ReviewRule):
                 recommended_action=("Provide capacitor RMS rating and measured or calculated RMS current.",),
                 evidence=evidence,
             )
+        assert rating is not None
+        assert stress is not None
         try:
             normalized_rating = normalize_positive_quantity(
                 name="capacitor_rms_current_rating", quantity=rating, target_unit="A"
@@ -419,7 +433,9 @@ class ResonantCapacitorRMSCurrentRule(ReviewRule):
         if normalized_stress.value > normalized_rating.value:
             severity = Severity.CRITICAL
             description = "Supplied resonant capacitor RMS current stress exceeds its supplied rating."
-            action = ("Require engineer review of RMS stress, rating conditions, and capacitor selection.",)
+            action: tuple[str, ...] = (
+                "Require engineer review of RMS stress, rating conditions, and capacitor selection.",
+            )
             requires_confirmation = True
         else:
             severity = Severity.INFO
@@ -474,6 +490,10 @@ class ControllerFrequencyCapabilityRule(ReviewRule):
                 recommended_action=("Provide project and controller minimum and maximum frequencies.",),
                 evidence=evidence,
             )
+        assert context.project.fsw_min is not None
+        assert context.project.fsw_max is not None
+        assert context.controller.frequency_min is not None
+        assert context.controller.frequency_max is not None
         try:
             project_min = normalize_positive_quantity(
                 name="project_fsw_min", quantity=context.project.fsw_min, target_unit="Hz"
@@ -532,4 +552,3 @@ class ControllerFrequencyCapabilityRule(ReviewRule):
             recommended_action=action,
             requires_engineer_confirmation=False,
         )
-

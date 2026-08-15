@@ -5,7 +5,6 @@ from app.engine.results import build_calculation_result
 from app.engine.units import normalize_positive_quantity
 from app.schemas.engineering import CalculationResult, EngineeringQuantity
 
-
 FR_FORMULA_VERSION: Final = "LLC-FR-V1"
 FP_FORMULA_VERSION: Final = "LLC-FP-V1"
 ZR_FORMULA_VERSION: Final = "LLC-ZR-V1"

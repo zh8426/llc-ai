@@ -22,7 +22,6 @@ from app.services.projects import (
     update_project,
 )
 
-
 router = APIRouter(prefix="/projects", tags=["projects"])
 SessionDependency = Annotated[Session, Depends(get_session)]
 

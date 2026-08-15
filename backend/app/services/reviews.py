@@ -217,12 +217,14 @@ def review_to_response(review: ReviewRun) -> ProjectReviewResponse:
             if review.created_at.tzinfo is None
             else review.created_at.astimezone(UTC)
         ),
-        summary=ReviewSummary(
-            pass_count=review.pass_count,
-            info=review.info_count,
-            warning=review.warning_count,
-            critical=review.critical_count,
-            insufficient_data=review.insufficient_data_count,
+        summary=ReviewSummary.model_validate(
+            {
+                "pass": review.pass_count,
+                "info": review.info_count,
+                "warning": review.warning_count,
+                "critical": review.critical_count,
+                "insufficient_data": review.insufficient_data_count,
+            }
         ),
         findings=findings,
     )

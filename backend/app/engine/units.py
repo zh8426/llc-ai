@@ -6,8 +6,7 @@ from pint.errors import PintError
 from app.engine.exceptions import InvalidEngineeringQuantityError
 from app.schemas.engineering import EngineeringQuantity
 
-
-_UNIT_REGISTRY = UnitRegistry()
+_UNIT_REGISTRY: UnitRegistry = UnitRegistry()
 
 
 def normalize_quantity(

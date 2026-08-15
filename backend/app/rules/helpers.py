@@ -15,15 +15,12 @@ def available_values(
 
 def user_input_evidence(
     description: str,
-    *,
-    references: tuple[str, ...] = (),
     **values: EngineeringQuantity | None,
 ) -> EvidenceItem:
     return EvidenceItem(
         source=EvidenceSource.USER_INPUT,
         description=description,
         values=available_values(**values),
-        references=references,
     )
 
 
@@ -74,4 +71,3 @@ def insufficient_finding(
         recommended_action=recommended_action,
         requires_engineer_confirmation=False,
     )
-

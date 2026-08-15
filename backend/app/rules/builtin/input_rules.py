@@ -174,6 +174,10 @@ class InputVoltageOrderingRule(ReviewRule):
                 evidence=evidence,
             )
 
+        assert project.vin_min is not None
+        assert project.vin_nom is not None
+        assert project.vin_max is not None
+
         try:
             vin_min = normalize_positive_quantity(
                 name="vin_min", quantity=project.vin_min, target_unit="V"
@@ -246,6 +250,9 @@ class SwitchingFrequencyOrderingRule(ReviewRule):
                 evidence=evidence,
             )
 
+        assert project.fsw_min is not None
+        assert project.fsw_max is not None
+
         try:
             fsw_min = normalize_positive_quantity(
                 name="fsw_min", quantity=project.fsw_min, target_unit="Hz"
@@ -285,4 +292,3 @@ class SwitchingFrequencyOrderingRule(ReviewRule):
             recommended_action=action,
             requires_engineer_confirmation=False,
         )
-

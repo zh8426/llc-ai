@@ -4,7 +4,6 @@ from app.engine.results import build_calculation_result
 from app.engine.units import normalize_efficiency, normalize_positive_quantity
 from app.schemas.engineering import CalculationResult, EngineeringQuantity
 
-
 OUTPUT_CURRENT_FORMULA_VERSION: Final = "LLC-IOUT-V1"
 INPUT_POWER_FORMULA_VERSION: Final = "LLC-PIN-V1"
 

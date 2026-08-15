@@ -46,6 +46,8 @@ class ResonantFrequencyCalculationRule(ReviewRule):
                 recommended_action=("Provide valid Lr and Cr values with units.",),
                 evidence=(input_evidence,),
             )
+        assert project.lr is not None
+        assert project.cr is not None
         try:
             result = calculate_fr(lr=project.lr, cr=project.cr)
         except EngineeringCalculationError:
@@ -95,6 +97,9 @@ class LowerResonantFrequencyCalculationRule(ReviewRule):
                 recommended_action=("Provide valid Lr, Lm, and Cr values with units.",),
                 evidence=(input_evidence,),
             )
+        assert project.lr is not None
+        assert project.lm is not None
+        assert project.cr is not None
         try:
             result = calculate_fp(lr=project.lr, lm=project.lm, cr=project.cr)
         except EngineeringCalculationError:
@@ -149,6 +154,10 @@ class ResonantFrequencyOperatingRangeRule(ReviewRule):
                 recommended_action=("Provide Lr, Cr, Fsw Min, and Fsw Max.",),
                 evidence=(input_evidence,),
             )
+        assert project.lr is not None
+        assert project.cr is not None
+        assert project.fsw_min is not None
+        assert project.fsw_max is not None
         try:
             fr = calculate_fr(lr=project.lr, cr=project.cr)
             fsw_min = normalize_positive_quantity(
@@ -222,6 +231,8 @@ class InductanceRatioObservationRule(ReviewRule):
                 recommended_action=("Provide valid Lr and Lm values with units.",),
                 evidence=(input_evidence,),
             )
+        assert project.lr is not None
+        assert project.lm is not None
         try:
             result = calculate_lm_lr_ratio(lr=project.lr, lm=project.lm)
         except EngineeringCalculationError:
@@ -278,6 +289,8 @@ class CharacteristicImpedanceRule(ReviewRule):
                 recommended_action=("Provide valid Lr and Cr values with units.",),
                 evidence=(input_evidence,),
             )
+        assert project.lr is not None
+        assert project.cr is not None
         try:
             result = calculate_zr(lr=project.lr, cr=project.cr)
         except EngineeringCalculationError:
@@ -357,6 +370,11 @@ class OutputPowerConsistencyRule(ReviewRule):
                 ),
                 evidence=tuple(evidence_items),
             )
+
+        assert project.pout is not None
+        assert project.vout is not None
+        assert iout_quantity is not None
+        assert tolerance is not None
 
         try:
             pout = normalize_positive_quantity(
