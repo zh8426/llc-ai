@@ -144,6 +144,26 @@ Finding 的“输入数据”区域从 `source=user_input` 的 Evidence values �
 Rule ID 与 Formula Version 供追溯。用户界面使用中文产品术语，内部 TypeScript、API
 字段和值枚举保持英文。
 
+Phase 6.1-G 将 Frontend 按职责拆分，保持 `App.tsx` 只负责页面编排：
+
+```text
+App.tsx
+  ├── hooks/useProjectWorkspace.ts
+  │     └── Project 列表、表单状态、保存和 Review 操作
+  ├── components/ProjectSidebar.tsx
+  ├── components/ProjectEditor.tsx
+  ├── components/ReviewPanel.tsx
+  │     └── Finding 展示与本地化标签
+  ├── components/WaveformPanel.tsx
+  │     └── CSV 选择、ZVS API 调用与 SVG 展示
+  └── projectForm.ts / reviewLabels.ts
+        └── 表单转换与纯展示格式化函数
+```
+
+组件只消费 `frontend/src/types.ts` 与 `frontend/src/api.ts` 的结构化契约；项目表单
+转换和评审标签格式化保持为独立的非工程计算模块。任何 LLC 公式、Rule Engine 或
+Waveform 判定仍由 Backend 确定性模块执行。
+
 ## Reporting Boundary
 
 `backend/app/reports/` 只依赖 Pydantic Project/Review Schema。它不导入 Engineering Engine、Rule Engine、SQLAlchemy 或 FastAPI。

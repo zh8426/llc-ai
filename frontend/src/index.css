@@ -671,6 +671,11 @@ h2 {
   box-shadow: 0 16px 44px rgb(31 60 50 / 6%);
 }
 
+.waveform-panel > .section-note {
+  margin: 16px 0 24px;
+  line-height: 1.7;
+}
+
 .phase-badge {
   padding: 7px 10px;
   border: 1px solid #d8e8e0;
