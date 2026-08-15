@@ -85,7 +85,7 @@ Waveform 文件、信号处理结果或 ZVS 分类。
 
 Review 还会保存同一次运行生成的 Calculation Snapshot，包括计算引擎版本、时间、完整六项 `CalculationResult`、缺失信息和公式错误。`/calculate` 与 Review 共用 `services/calculations.py::calculate_project()` 这一条 canonical execution path。R005–R010 从传入 ReviewContext 的快照结果读取基础计算，不重复执行 Phase 1 公式。
 
-开发环境默认 SQLite，通过 `DATABASE_URL` 可配置其他 SQLAlchemy Database URL。数据库 schema 由 Alembic migration 管理，当前基线 revision 为 `0001_phase0_4_baseline`。应用启动不再调用 `create_all()`，部署或本地启动前必须先执行 `python -m alembic upgrade head`。
+开发环境默认 SQLite，通过 `DATABASE_URL` 可配置其他 SQLAlchemy Database URL。数据库 schema 由 Alembic migration 管理，当前基线 revision 为 `0001_phase0_4_baseline`。应用启动不再调用 `create_all()`，部署或本地启动前必须先执行 `python -m alembic upgrade head`。应用创建的 SQLite Engine 会显式启用 `PRAGMA foreign_keys=ON`，使模型声明的 `ON DELETE CASCADE` 在运行时生效。
 
 测试 fixture 可以对隔离的临时内存数据库显式调用 `Base.metadata.create_all()`；该调用只负责测试装配，不是正式 schema evolution 路径。
 

@@ -180,15 +180,34 @@ python -m alembic current --check-heads
 如果 `llc_assistant.sqlite3` 是旧版本通过 `create_all()` 创建的数据库，其中已经存在
 `projects`、`review_runs`、`review_findings` 和 `review_project_snapshots` 四张表，不能直接对它执行首个 baseline 的建表操作。
 
-先备份数据库并确认它确实来自提交 `81ee4d3` 或相同 Phase 0–4 schema，然后执行一次：
+先确认数据库确实来自提交 `81ee4d3` 或相同的 Phase 0–4 schema。确认来源和表结构后，按以下顺序执行：
 
 ```powershell
 Copy-Item .\llc_assistant.sqlite3 .\llc_assistant.before-alembic.sqlite3
 python -m alembic stamp 0001_phase0_4_baseline
+python -m alembic upgrade head
 python -m alembic current --check-heads
 ```
 
-`stamp` 只记录 schema 版本，不创建、删除或修改业务表。不要对来源不明或结构不同的数据库执行该命令；应先人工核对 schema。
+正常情况下，最后一条命令应显示：
+
+```text
+0002_calculation_snapshot (head)
+```
+
+`stamp` 只记录 schema 版本，不创建、删除或修改业务表；后续的 `upgrade head` 才会应用
+`0002_calculation_snapshot` 等尚未执行的 migration。升级完成后，原有 Project、Review 及其数据应保留，
+并新增 `review_calculation_snapshots` 表。
+
+数据库来源不同，处理方式不同：
+
+| 数据库情况 | 操作 |
+| --- | --- |
+| 全新数据库 | 直接执行 `python -m alembic upgrade head` |
+| 已确认的旧 Phase 0–4 数据库 | 备份后执行 `stamp 0001_phase0_4_baseline`，再执行 `upgrade head` |
+| 来源不明或表结构不一致 | 禁止直接 `stamp`；先人工核对或复制数据库后验证 |
+
+不要对来源不明或结构不同的数据库执行 `stamp`，否则 Alembic 会把未知 schema 当作已知 baseline，可能掩盖真实迁移问题。
 
 Health check：
 
