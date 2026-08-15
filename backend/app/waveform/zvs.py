@@ -113,16 +113,18 @@ class ZVSAnalysisResult:
     dead_time: DeadTimeMeasurement
     vds_at_turn_on: VDSAtTurnOnMeasurement | None
     zvs_status: ZVSStatus
-    confidence: float
+    cycle_consistency: float
     evidence_cycles: tuple[TurnOnEvidence, ...]
     limitations: tuple[str, ...]
     gate_turn_on_timestamps: tuple[float, ...] = ()
     gate_turn_off_timestamps: tuple[float, ...] = ()
-    analysis_version: str = "WAVEFORM-ZVS-MVP-V2"
+    analysis_version: str = "WAVEFORM-ZVS-MVP-V3"
 
     def __post_init__(self) -> None:
-        if not isfinite(self.confidence) or not 0.0 <= self.confidence <= 1.0:
-            raise WaveformSchemaError("ZVS confidence must be finite and between zero and one")
+        if not isfinite(self.cycle_consistency) or not 0.0 <= self.cycle_consistency <= 1.0:
+            raise WaveformSchemaError(
+                "ZVS cycle_consistency must be finite and between zero and one"
+            )
         object.__setattr__(self, "limitations", tuple(self.limitations))
 
 
@@ -264,7 +266,7 @@ def analyze_zvs(
             )
         )
     )
-    status, confidence = _summarize_status(statuses)
+    status, cycle_consistency = _summarize_status(statuses)
     complementary_rising = None
     if "VGS_Q2" in waveform.channels:
         complementary_rising = detect_rising_edges(
@@ -297,7 +299,7 @@ def analyze_zvs(
         dead_time=dead_time,
         vds_at_turn_on=vds_measurement,
         zvs_status=status,
-        confidence=confidence,
+        cycle_consistency=cycle_consistency,
         evidence_cycles=evidence,
         limitations=tuple(limitations),
         gate_turn_on_timestamps=rising.timestamps,
@@ -456,7 +458,7 @@ def _insufficient_result(reason: str) -> ZVSAnalysisResult:
         dead_time=DeadTimeMeasurement(value=None, values=()),
         vds_at_turn_on=None,
         zvs_status="INSUFFICIENT_DATA",
-        confidence=0.0,
+        cycle_consistency=0.0,
         evidence_cycles=(),
         limitations=(
             reason,

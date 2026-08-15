@@ -127,7 +127,7 @@ def _zvs_to_response(result: ZVSAnalysisResult) -> ZVSAnalysisResponse:
             )
         ),
         zvs_status=result.zvs_status,
-        confidence=result.confidence,
+        cycle_consistency=result.cycle_consistency,
         evidence_cycles=tuple(
             TurnOnEvidenceResponse(
                 cycle_index=item.cycle_index,

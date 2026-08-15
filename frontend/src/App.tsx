@@ -829,7 +829,7 @@ function WaveformPanel() {
           <div className={`zvs-status zvs-${result.zvs_status.toLowerCase()}`}>
             <span>ZVS 状态</span>
             <strong>{waveformStatusLabels[result.zvs_status]}</strong>
-            <small>置信度 {Math.round(result.confidence * 100)}%</small>
+            <small>周期一致性 {Math.round(result.cycle_consistency * 100)}%</small>
           </div>
           <div className="waveform-summary-grid">
             <div><span>开关频率</span><strong>{result.switching_frequency ? `${result.switching_frequency.value.toPrecision(8)} Hz` : '数据不足'}</strong></div>

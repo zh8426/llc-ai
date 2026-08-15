@@ -118,7 +118,7 @@ Phase 2 引入以下项目级规则定义，不引入通用数值裕量：
   `LIKELY_HARD_SWITCHING`，两者之间为 `PARTIAL_ZVS`。这两个阈值是信号分类配置，
   不是通用安全裕量。
 - 多周期汇总只有全部周期同类时才返回对应的 `LIKELY_*`；存在混合结果时返回
-  `PARTIAL_ZVS`。`confidence` 是占主导分类的周期比例，不是概率或安全置信度。
+  `PARTIAL_ZVS`。`cycle_consistency` 是占主导分类的周期比例，不是概率或安全置信度。
 - 每个 ZVS 结果必须带有逐周期 VDS、IRES 和 gate turn-on 时间证据，并明确声明
   这是波形特征分类，不是安全认证或量产批准，且需要合格工程师复核原始探头、缩放、
   极性和测试条件。

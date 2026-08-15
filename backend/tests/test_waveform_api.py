@@ -44,8 +44,9 @@ async def test_waveform_zvs_api_accepts_csv_and_returns_traceable_result(
     assert response.status_code == 200
     result = response.json()
     assert result["zvs_status"] == "LIKELY_ZVS"
-    assert result["analysis_version"] == "WAVEFORM-ZVS-MVP-V2"
-    assert result["confidence"] == 1.0
+    assert result["analysis_version"] == "WAVEFORM-ZVS-MVP-V3"
+    assert result["cycle_consistency"] == 1.0
+    assert "confidence" not in result
     assert result["switching_frequency"]["value"] == pytest.approx(100_000.0)
     assert result["vds_at_turn_on"]["values"] == pytest.approx([2.0, 2.0, 2.0])
     assert result["dead_time"]["status"] == "AVAILABLE"

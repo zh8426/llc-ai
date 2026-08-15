@@ -76,7 +76,7 @@ class ZVSAnalysisResponse(BaseModel):
     dead_time: DeadTimeResponse
     vds_at_turn_on: VDSAtTurnOnResponse | None
     zvs_status: ZVSStatusValue
-    confidence: float = Field(ge=0, le=1, allow_inf_nan=False)
+    cycle_consistency: float = Field(ge=0, le=1, allow_inf_nan=False)
     evidence_cycles: tuple[TurnOnEvidenceResponse, ...]
     limitations: tuple[str, ...]
     analysis_version: str = Field(min_length=1)

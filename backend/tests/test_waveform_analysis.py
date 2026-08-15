@@ -178,8 +178,8 @@ def test_zvs_analysis_classifies_clean_zvs_with_cycle_evidence() -> None:
     result = analyze_zvs_csv(csv_text, metadata, zvs_config())
 
     assert result.zvs_status == "LIKELY_ZVS"
-    assert result.analysis_version == "WAVEFORM-ZVS-MVP-V2"
-    assert result.confidence == 1.0
+    assert result.analysis_version == "WAVEFORM-ZVS-MVP-V3"
+    assert result.cycle_consistency == 1.0
     assert result.switching_frequency is not None
     assert result.switching_frequency.value == pytest.approx(100_000.0)
     assert result.vds_at_turn_on is not None
@@ -198,14 +198,14 @@ def test_zvs_analysis_classifies_partial_and_hard_switching() -> None:
     hard = analyze_zvs_csv(hard_csv, metadata, zvs_config())
 
     assert partial.zvs_status == "PARTIAL_ZVS"
-    assert partial.confidence == pytest.approx(1.0 / 3.0)
+    assert partial.cycle_consistency == pytest.approx(1.0 / 3.0)
     assert [evidence.status for evidence in partial.evidence_cycles] == [
         "LIKELY_ZVS",
         "PARTIAL_ZVS",
         "LIKELY_HARD_SWITCHING",
     ]
     assert hard.zvs_status == "LIKELY_HARD_SWITCHING"
-    assert hard.confidence == 1.0
+    assert hard.cycle_consistency == 1.0
 
 
 def test_dead_time_is_available_only_with_complementary_gate_edges() -> None:
@@ -296,7 +296,7 @@ def test_zvs_analysis_returns_insufficient_data_for_missing_channels() -> None:
     result = analyze_zvs(waveform, zvs_config())
 
     assert result.zvs_status == "INSUFFICIENT_DATA"
-    assert result.confidence == 0.0
+    assert result.cycle_consistency == 0.0
     assert result.vds_at_turn_on is None
 
 

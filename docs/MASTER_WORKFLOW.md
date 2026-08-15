@@ -1271,7 +1271,7 @@ time
   "dead_time": {},
   "vds_at_turn_on": {},
   "zvs_status": "",
-  "confidence": 0,
+  "cycle_consistency": 0,
   "evidence_cycles": [],
   "limitations": []
 }

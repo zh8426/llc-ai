@@ -191,7 +191,7 @@ export type ZVSAnalysis = {
     formula_version: string
   } | null
   zvs_status: ZVSStatus
-  confidence: number
+  cycle_consistency: number
   evidence_cycles: ZVSEvidenceCycle[]
   limitations: string[]
   analysis_version: string
