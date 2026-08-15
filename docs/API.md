@@ -258,3 +258,8 @@ INSUFFICIENT_DATA
 没有 `VGS_Q2` 时 `dead_time.status` 为 `INSUFFICIENT_DATA`。该 endpoint 不保存上传的
 CSV，不调用 LLM，不输出安全认证或量产结论。CSV、单位、阈值或测试条件不符合契约时
 返回 `422`。
+
+波形上传有明确资源边界：单个 CSV 最大 `25 MiB`，最多 `1,000,000` 个原始采样行，最多
+`8` 个波形通道（不含 `time` 列）。超过文件大小时返回 HTTP `413`，错误标识为
+`WAVEFORM_FILE_TOO_LARGE`；超过样本或通道上限时返回 `422`，错误信息包含
+`WAVEFORM_TOO_LARGE`。服务端使用有上限的读取，不会为了检查文件大小而将无限输入读入内存。

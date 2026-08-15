@@ -4,7 +4,8 @@ from collections.abc import Iterable
 
 import numpy as np
 
-from app.waveform.exceptions import WaveformSchemaError
+from app.waveform.exceptions import WaveformSchemaError, WaveformTooLargeError
+from app.waveform.limits import MAX_WAVEFORM_CHANNELS, MAX_WAVEFORM_SAMPLES
 from app.waveform.models import WaveformData, WaveformMetadata
 from app.waveform.preprocessing import (
     finite_sample_mask,
@@ -38,6 +39,17 @@ def load_waveform_csv(csv_text: str, metadata: WaveformMetadata) -> WaveformData
         raise WaveformSchemaError("CSV column names must not contain surrounding whitespace")
     if len(set(normalized_headers)) != len(normalized_headers):
         raise WaveformSchemaError("CSV column names must be unique")
+    channel_count = len(normalized_headers) - (1 if "time" in normalized_headers else 0)
+    if channel_count > MAX_WAVEFORM_CHANNELS:
+        raise WaveformTooLargeError(
+            "WAVEFORM_TOO_LARGE: CSV channel count exceeds "
+            f"the maximum of {MAX_WAVEFORM_CHANNELS}"
+        )
+    if len(metadata.channels) > MAX_WAVEFORM_CHANNELS:
+        raise WaveformTooLargeError(
+            "WAVEFORM_TOO_LARGE: channel metadata exceeds "
+            f"the maximum of {MAX_WAVEFORM_CHANNELS}"
+        )
     missing_columns = [name for name in REQUIRED_COLUMNS if name not in normalized_headers]
     if missing_columns:
         raise WaveformSchemaError(
@@ -52,7 +64,14 @@ def load_waveform_csv(csv_text: str, metadata: WaveformMetadata) -> WaveformData
     parsed_columns: dict[str, list[float]] = {
         name: [] for name in normalized_headers if name in {"time", *CHANNEL_TARGET_UNITS}
     }
+    sample_count = 0
     for row_number, row in enumerate(reader, start=2):
+        if sample_count >= MAX_WAVEFORM_SAMPLES:
+            raise WaveformTooLargeError(
+                "WAVEFORM_TOO_LARGE: sample count exceeds "
+                f"the maximum of {MAX_WAVEFORM_SAMPLES}"
+            )
+        sample_count += 1
         if None in row:
             raise WaveformSchemaError(f"CSV row {row_number} contains extra values")
         for name in parsed_columns:

@@ -5,6 +5,7 @@ from app.waveform.exceptions import (
     WaveformAnalysisError,
     WaveformError,
     WaveformSchemaError,
+    WaveformTooLargeError,
 )
 from app.waveform.features import (
     calculate_peak,
@@ -51,6 +52,7 @@ __all__ = [
     "WaveformError",
     "WaveformMetadata",
     "WaveformSchemaError",
+    "WaveformTooLargeError",
     "TurnOnEvidence",
     "VDSAtTurnOnMeasurement",
     "ZVSAnalysisResult",

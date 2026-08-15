@@ -59,6 +59,8 @@ dead-time、VDS 采样与分类仍由 `backend/app/waveform/` 的确定性代码
 只在完整 Q1 周期内按 `Q1 falling < Q2 rising < Q1 next rising` 配对，并保留有效、缺失和拒绝窗口计数。
 没有 `VGS_Q2` 时，系统明确返回 dead-time `INSUFFICIENT_DATA`，不把单个 Q1 的
 关断到下一次导通间隔冒充半桥互补 dead time。
+波形上传边界为单文件 `25 MiB`、`1,000,000` 个原始采样行和 `8` 个通道（不含 `time`）；
+API 在读取文件时即限制最大读取量，分析层对样本和通道数量再次校验。
 
 ## Persistence
 

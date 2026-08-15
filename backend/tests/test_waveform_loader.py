@@ -8,6 +8,7 @@ from app.waveform import (
     ChannelMetadata,
     WaveformMetadata,
     WaveformSchemaError,
+    WaveformTooLargeError,
     load_waveform_csv,
 )
 
@@ -68,6 +69,30 @@ def test_loader_rejects_missing_channel_metadata() -> None:
 
     with pytest.raises(WaveformSchemaError, match="missing required channels: IRES"):
         load_waveform_csv("time,VGS_Q1,VDS_Q1,IRES\n0,0,0,0\n", metadata)
+
+
+def test_loader_rejects_sample_limit(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("app.waveform.loader.MAX_WAVEFORM_SAMPLES", 2)
+    csv_text = "time,VGS_Q1,VDS_Q1,IRES\n0,0,0,0\n1,0,0,0\n2,0,0,0\n"
+
+    with pytest.raises(WaveformTooLargeError, match="WAVEFORM_TOO_LARGE"):
+        load_waveform_csv(csv_text, waveform_metadata())
+
+
+def test_loader_rejects_channel_limit(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("app.waveform.loader.MAX_WAVEFORM_CHANNELS", 3)
+    metadata = waveform_metadata(
+        channels={
+            "VGS_Q1": ChannelMetadata(unit="V"),
+            "VDS_Q1": ChannelMetadata(unit="V"),
+            "IRES": ChannelMetadata(unit="A"),
+            "VGS_Q2": ChannelMetadata(unit="V"),
+        }
+    )
+    csv_text = "time,VGS_Q1,VDS_Q1,IRES,VGS_Q2\n0,0,0,0,0\n"
+
+    with pytest.raises(WaveformTooLargeError, match="WAVEFORM_TOO_LARGE"):
+        load_waveform_csv(csv_text, metadata)
 
 
 def test_loader_rejects_wrong_channel_unit() -> None:
