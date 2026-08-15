@@ -9,11 +9,12 @@ from app.api.reports import history_router as historical_reports_router
 from app.api.reports import router as reports_router
 from app.api.reviews import history_router as review_history_router
 from app.api.reviews import router as reviews_router
+from app.api.waveforms import router as waveforms_router
 
 app = FastAPI(
     title="LLC Engineering Assistant API",
     description=(
-        "Project persistence, deterministic LLC calculations, and design review APIs."
+        "Project persistence, deterministic LLC calculations, design review, and waveform APIs."
     ),
     version="0.1.0",
 )
@@ -37,3 +38,4 @@ app.include_router(reviews_router)
 app.include_router(review_history_router)
 app.include_router(reports_router)
 app.include_router(historical_reports_router)
+app.include_router(waveforms_router)

@@ -110,6 +110,7 @@ Backend：
 - Alembic
 - Pint
 - NumPy
+- python-multipart
 - pytest / pytest-cov
 - Ruff
 - mypy
@@ -120,7 +121,7 @@ Frontend：
 - TypeScript
 - Vite
 
-后续按 Phase 与实际算法需要引入 PostgreSQL、SciPy、pandas 和波形可视化依赖。
+后续按 Phase 与实际算法需要引入 PostgreSQL、SciPy 和 pandas。
 
 ## Repository Layout
 
@@ -130,6 +131,7 @@ backend/app/models/       Persistence models
 backend/app/schemas/      Structured input/output schemas
 backend/app/engine/       Deterministic engineering calculations
 backend/app/waveform/     Deterministic waveform loading and signal features
+backend/app/api/waveforms.py  CSV waveform upload and ZVS API
 backend/app/rules/        Design review rules
 backend/app/datasheet/    Datasheet ingestion
 backend/app/knowledge/    Engineering evidence and fault knowledge

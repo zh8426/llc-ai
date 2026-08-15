@@ -1,6 +1,6 @@
 # Architecture
 
-## 当前范围：Phase 5
+## 当前范围：Phase 6
 
 Phase 3 形成第一个 Project Design Review Web Workflow：
 
@@ -40,6 +40,24 @@ CSV + Acquisition Metadata
 `backend/app/waveform/` 不依赖 FastAPI、SQLAlchemy、Rule Engine、Frontend、网络或
 LLM。Phase 5 只建立波形加载和基础信号处理能力，尚不持久化波形，也不输出 ZVS、
 dead time、VDS at turn-on 或故障诊断结论。
+
+Phase 6 在该纯函数引擎之上增加只读分析适配层：
+
+```text
+CSV Upload + Acquisition Metadata + Explicit ZVS Thresholds
+  → Phase 5 normalized waveform
+  → gate turn-on / turn-off evidence
+  → VDS at gate turn-on
+  → complementary-gate dead-time when VGS_Q2 exists
+  → conservative ZVS classification
+  → FastAPI structured response
+  → React SVG waveform view
+```
+
+API 和 Frontend 只负责文件/元数据边界、结构化结果传输和展示；所有边沿、周期、
+dead-time、VDS 采样与分类仍由 `backend/app/waveform/` 的确定性代码完成。
+没有 `VGS_Q2` 时，系统明确返回 dead-time `INSUFFICIENT_DATA`，不把单个 Q1 的
+关断到下一次导通间隔冒充半桥互补 dead time。
 
 ## Persistence
 
@@ -141,6 +159,5 @@ Summary 和 Calculation Snapshot 摘要，Review ID endpoint 返回完整历史 
 
 ## Phase Boundary
 
-Phase 5 不包含：Waveform API/UI、持久化、ZVS classification、dead time、VDS at
-turn-on、PDF Report、Datasheet/BOM Parser、Fault Diagnosis、LLM/RAG/AI Chat、
-Authentication、Payment 或 Cloud Deployment。
+Phase 6 不包含：波形持久化、PDF Report、Datasheet/BOM Parser、Fault Diagnosis、
+LLM/RAG/AI Chat、Authentication、Payment 或 Cloud Deployment。

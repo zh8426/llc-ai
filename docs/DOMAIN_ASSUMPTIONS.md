@@ -106,3 +106,19 @@ Phase 2 引入以下项目级规则定义，不引入通用数值裕量：
 - `WAVEFORM-ANALYSIS-MVP-V1` 串联 CSV 加载、`VGS_Q1` 边沿检测、周期分段、
   开关频率及所有已加载通道的 Peak/RMS；它不产生 ZVS 分类。
 - 所有 Phase 5 输出都是确定性信号特征，不是 ZVS、安全、器件合规或故障结论。
+
+## Phase 6 ZVS Processing Definitions
+
+- `calculate_vds_at_gate_turn_on()` 取检测到的 `VGS_Q1` 上升沿所在采样点的 `VDS_Q1`
+  值，不做亚采样插值；同一行过滤保证 `VGS_Q1`、`VDS_Q1`、`IRES` 时间轴对齐。
+- `dead_time` 只有在同时提供 `VGS_Q2` 时才计算，定义为 Q1 下降沿到其后第一个
+  Q2 上升沿的时间差。只有 Q1 时返回 `INSUFFICIENT_DATA`，不进行替代估算。
+- ZVS 分类阈值必须由本次分析显式提供：`VDS <= vds_zvs_threshold` 为
+  `LIKELY_ZVS`，`VDS >= vds_hard_switching_threshold` 为
+  `LIKELY_HARD_SWITCHING`，两者之间为 `PARTIAL_ZVS`。这两个阈值是信号分类配置，
+  不是通用安全裕量。
+- 多周期汇总只有全部周期同类时才返回对应的 `LIKELY_*`；存在混合结果时返回
+  `PARTIAL_ZVS`。`confidence` 是占主导分类的周期比例，不是概率或安全置信度。
+- 每个 ZVS 结果必须带有逐周期 VDS、IRES 和 gate turn-on 时间证据，并明确声明
+  这是波形特征分类，不是安全认证或量产批准，且需要合格工程师复核原始探头、缩放、
+  极性和测试条件。

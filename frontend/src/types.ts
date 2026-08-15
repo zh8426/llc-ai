@@ -127,3 +127,71 @@ export type ProjectReviewHistory = {
 }
 
 export type ProjectPayload = Record<string, unknown>
+
+export type WaveformChannelMetadata = {
+  unit: string
+  probe_ratio: number
+  polarity: 1 | -1
+}
+
+export type WaveformAnalysisRequest = {
+  file: File
+  sampleRate: number
+  timeUnit: string
+  channels: Record<string, WaveformChannelMetadata>
+  testCondition: Record<string, string>
+  vdsZvsThreshold: number
+  vdsHardSwitchingThreshold: number
+  gateLowThreshold: number | null
+  gateHighThreshold: number | null
+}
+
+export type ZVSStatus =
+  | 'LIKELY_ZVS'
+  | 'PARTIAL_ZVS'
+  | 'LIKELY_HARD_SWITCHING'
+  | 'INSUFFICIENT_DATA'
+
+export type ZVSEvidenceCycle = {
+  cycle_index: number
+  gate_turn_on_time: number
+  vds_at_turn_on: number
+  ires_at_turn_on: number
+  status: ZVSStatus
+}
+
+export type DeadTimeEvidence = {
+  primary_turn_off_time: number
+  complementary_turn_on_time: number
+  duration: number
+}
+
+export type ZVSAnalysis = {
+  switching_frequency: {
+    value: number
+    unit: string
+    cycle_count: number
+    formula_version: string
+  } | null
+  dead_time: {
+    value: number | null
+    values: number[]
+    evidence: DeadTimeEvidence[]
+    unit: string
+    status: 'AVAILABLE' | 'INSUFFICIENT_DATA'
+    formula_version: string
+  }
+  vds_at_turn_on: {
+    value: number | null
+    values: number[]
+    unit: string
+    formula_version: string
+  } | null
+  zvs_status: ZVSStatus
+  confidence: number
+  evidence_cycles: ZVSEvidenceCycle[]
+  limitations: string[]
+  analysis_version: string
+  gate_turn_on_timestamps: number[]
+  gate_turn_off_timestamps: number[]
+}

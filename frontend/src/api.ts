@@ -1,4 +1,10 @@
-import type { Project, ProjectPayload, Review } from './types'
+import type {
+  Project,
+  ProjectPayload,
+  Review,
+  WaveformAnalysisRequest,
+  ZVSAnalysis,
+} from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
 
@@ -35,6 +41,26 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     try {
       const body = (await response.json()) as { detail?: string }
       detail = body.detail ?? detail
+    } catch {
+      // Keep the HTTP status when the server does not return JSON.
+    }
+    throw new ApiRequestError(response.status, detail)
+  }
+
+  return (await response.json()) as T
+}
+
+async function requestMultipart<T>(path: string, body: FormData): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    body,
+  })
+
+  if (!response.ok) {
+    let detail = `${response.status} ${response.statusText}`
+    try {
+      const payload = (await response.json()) as { detail?: string }
+      detail = payload.detail ?? detail
     } catch {
       // Keep the HTTP status when the server does not return JSON.
     }
@@ -87,4 +113,20 @@ export async function getLatestReview(projectId: string): Promise<Review | null>
 
 export function reportUrl(projectId: string): string {
   return `${API_BASE_URL}/projects/${projectId}/report`
+}
+
+export function analyzeZVS(input: WaveformAnalysisRequest): Promise<ZVSAnalysis> {
+  const body = new FormData()
+  body.append('file', input.file)
+  body.append('sample_rate', String(input.sampleRate))
+  body.append('time_unit', input.timeUnit)
+  body.append('channels', JSON.stringify(input.channels))
+  body.append('test_condition', JSON.stringify(input.testCondition))
+  body.append('vds_zvs_threshold', String(input.vdsZvsThreshold))
+  body.append('vds_hard_switching_threshold', String(input.vdsHardSwitchingThreshold))
+  if (input.gateLowThreshold !== null && input.gateHighThreshold !== null) {
+    body.append('gate_low_threshold', String(input.gateLowThreshold))
+    body.append('gate_high_threshold', String(input.gateHighThreshold))
+  }
+  return requestMultipart<ZVSAnalysis>('/waveforms/zvs', body)
 }

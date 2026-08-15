@@ -213,3 +213,45 @@ http://localhost:5173
 ```
 
 本阶段没有 Authentication、Cloud Deployment 或公开网络安全配置。
+
+## `POST /waveforms/zvs`
+
+上传 CSV 并执行 Phase 5–6 的确定性波形与 ZVS 分析。请求使用 `multipart/form-data`：
+
+```text
+file: CSV 文件（必须包含 time、VGS_Q1、VDS_Q1、IRES）
+sample_rate: Hz
+time_unit: 默认 s
+channels: JSON 通道元数据映射
+test_condition: JSON 测试条件映射
+vds_zvs_threshold: V
+vds_hard_switching_threshold: V
+gate_low_threshold: 可选
+gate_high_threshold: 可选
+```
+
+`channels` 示例：
+
+```json
+{
+  "VGS_Q1": {"unit": "V", "probe_ratio": 1, "polarity": 1},
+  "VDS_Q1": {"unit": "V", "probe_ratio": 1, "polarity": 1},
+  "IRES": {"unit": "A", "probe_ratio": 1, "polarity": 1},
+  "VGS_Q2": {"unit": "V", "probe_ratio": 1, "polarity": 1}
+}
+```
+
+成功返回 `200`，包括 `switching_frequency`、`dead_time`、`vds_at_turn_on`、
+`zvs_status`、`confidence`、逐周期 `evidence_cycles`、gate turn-on/turn-off 时间戳
+和 limitations。`zvs_status` 只允许：
+
+```text
+LIKELY_ZVS
+PARTIAL_ZVS
+LIKELY_HARD_SWITCHING
+INSUFFICIENT_DATA
+```
+
+没有 `VGS_Q2` 时 `dead_time.status` 为 `INSUFFICIENT_DATA`。该 endpoint 不保存上传的
+CSV，不调用 LLM，不输出安全认证或量产结论。CSV、单位、阈值或测试条件不符合契约时
+返回 `422`。

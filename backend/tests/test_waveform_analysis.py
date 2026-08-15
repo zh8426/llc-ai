@@ -8,9 +8,14 @@ from app.waveform import (
     EdgeDetectionResult,
     SwitchingCycle,
     WaveformAnalysisError,
+    WaveformData,
     WaveformMetadata,
     WaveformSchemaError,
+    ZVSAnalyzerConfig,
     analyze_waveform_csv,
+    analyze_zvs,
+    analyze_zvs_csv,
+    calculate_dead_time,
     calculate_peak,
     calculate_rms,
     calculate_switching_frequency,
@@ -98,6 +103,168 @@ def test_analysis_pipeline_runs_from_csv_to_structured_features() -> None:
     assert result.channel_features["VDS_Q1"].peak.unit == "V"
     assert result.channel_features["IRES"].peak.value == pytest.approx(5.0)
     assert result.channel_features["IRES"].rms.unit == "A"
+
+
+def zvs_csv_fixture(
+    *,
+    vds_turn_on_values: tuple[float, ...],
+    include_complementary_gate: bool = False,
+) -> tuple[str, WaveformMetadata]:
+    time, gate = synthetic_gate_signal(cycle_count=4)
+    samples_per_cycle = 100
+    vds = np.full(len(time), 400.0)
+    for cycle_index, turn_on_value in enumerate(vds_turn_on_values):
+        start = cycle_index * samples_per_cycle + 25
+        end = min(start + 50, len(vds))
+        vds[start:end] = turn_on_value
+    ires = 5.0 * np.sin(2.0 * np.pi * 100_000.0 * time)
+    columns = ["time", "VGS_Q1", "VDS_Q1", "IRES"]
+    q2 = np.where(
+        (np.mod(np.arange(len(time)), samples_per_cycle) >= 80),
+        12.0,
+        0.0,
+    )
+    if include_complementary_gate:
+        columns.append("VGS_Q2")
+    rows = [",".join(columns)]
+    for index, (timestamp, vgs, drain_voltage, current) in enumerate(
+        zip(time, gate, vds, ires, strict=True)
+    ):
+        values = [timestamp, vgs, drain_voltage, current]
+        if include_complementary_gate:
+            values.append(q2[index])
+        rows.append(",".join(str(value) for value in values))
+    channels = {
+        "VGS_Q1": ChannelMetadata(unit="V"),
+        "VDS_Q1": ChannelMetadata(unit="V"),
+        "IRES": ChannelMetadata(unit="A"),
+    }
+    if include_complementary_gate:
+        channels["VGS_Q2"] = ChannelMetadata(unit="V")
+    metadata = WaveformMetadata(
+        sample_rate=10_000_000.0,
+        channels=channels,
+        test_condition={"vin": "400 VDC", "load": "500 W"},
+    )
+    return "\n".join(rows), metadata
+
+
+def zvs_config() -> ZVSAnalyzerConfig:
+    return ZVSAnalyzerConfig(
+        vds_zvs_threshold=10.0,
+        vds_hard_switching_threshold=300.0,
+        gate_low_threshold=3.0,
+        gate_high_threshold=9.0,
+    )
+
+
+def test_zvs_analysis_classifies_clean_zvs_with_cycle_evidence() -> None:
+    csv_text, metadata = zvs_csv_fixture(vds_turn_on_values=(2.0, 2.0, 2.0))
+
+    result = analyze_zvs_csv(csv_text, metadata, zvs_config())
+
+    assert result.zvs_status == "LIKELY_ZVS"
+    assert result.confidence == 1.0
+    assert result.switching_frequency is not None
+    assert result.switching_frequency.value == pytest.approx(100_000.0)
+    assert result.vds_at_turn_on is not None
+    assert result.vds_at_turn_on.values == pytest.approx((2.0, 2.0, 2.0))
+    assert len(result.evidence_cycles) == 3
+    assert all(evidence.status == "LIKELY_ZVS" for evidence in result.evidence_cycles)
+    assert result.dead_time.status == "INSUFFICIENT_DATA"
+    assert any("true half-bridge dead time" in limitation for limitation in result.limitations)
+
+
+def test_zvs_analysis_classifies_partial_and_hard_switching() -> None:
+    partial_csv, metadata = zvs_csv_fixture(vds_turn_on_values=(2.0, 100.0, 400.0))
+    hard_csv, _ = zvs_csv_fixture(vds_turn_on_values=(400.0, 400.0, 400.0))
+
+    partial = analyze_zvs_csv(partial_csv, metadata, zvs_config())
+    hard = analyze_zvs_csv(hard_csv, metadata, zvs_config())
+
+    assert partial.zvs_status == "PARTIAL_ZVS"
+    assert partial.confidence == pytest.approx(1.0 / 3.0)
+    assert [evidence.status for evidence in partial.evidence_cycles] == [
+        "LIKELY_ZVS",
+        "PARTIAL_ZVS",
+        "LIKELY_HARD_SWITCHING",
+    ]
+    assert hard.zvs_status == "LIKELY_HARD_SWITCHING"
+    assert hard.confidence == 1.0
+
+
+def test_dead_time_is_available_only_with_complementary_gate_edges() -> None:
+    csv_text, metadata = zvs_csv_fixture(
+        vds_turn_on_values=(2.0, 2.0, 2.0),
+        include_complementary_gate=True,
+    )
+
+    result = analyze_zvs_csv(csv_text, metadata, zvs_config())
+
+    assert result.dead_time.status == "AVAILABLE"
+    assert result.dead_time.value == pytest.approx(0.5e-6)
+    assert result.dead_time.values == pytest.approx((0.5e-6,) * 4)
+
+
+def test_dead_time_without_complementary_gate_is_explicitly_insufficient() -> None:
+    falling = detect_falling_edges(
+        np.array([0.0, 1.0, 2.0]),
+        np.array([2.0, 0.0, 0.0]),
+        low_threshold=1.0,
+        high_threshold=1.5,
+    )
+
+    result = calculate_dead_time(falling, None)
+
+    assert result.status == "INSUFFICIENT_DATA"
+    assert result.value is None
+    assert result.values == ()
+
+
+def test_zvs_analysis_returns_insufficient_data_for_missing_channels() -> None:
+    time = np.array([0.0, 1.0], dtype=np.float64)
+    metadata = WaveformMetadata(
+        sample_rate=1.0,
+        channels={"VGS_Q1": ChannelMetadata(unit="V")},
+        test_condition={"vin": "400 VDC"},
+    )
+    waveform = WaveformData(
+        time=time,
+        channels={"VGS_Q1": np.array([0.0, 12.0])},
+        normalized_channel_units={"VGS_Q1": "V"},
+        metadata=metadata,
+    )
+
+    result = analyze_zvs(waveform, zvs_config())
+
+    assert result.zvs_status == "INSUFFICIENT_DATA"
+    assert result.confidence == 0.0
+    assert result.vds_at_turn_on is None
+
+
+@pytest.mark.parametrize(
+    "config_factory",
+    [
+        lambda: ZVSAnalyzerConfig(
+            vds_zvs_threshold=-1.0,
+            vds_hard_switching_threshold=300.0,
+        ),
+        lambda: ZVSAnalyzerConfig(
+            vds_zvs_threshold=300.0,
+            vds_hard_switching_threshold=10.0,
+        ),
+        lambda: ZVSAnalyzerConfig(
+            vds_zvs_threshold=10.0,
+            vds_hard_switching_threshold=300.0,
+            gate_low_threshold=3.0,
+        ),
+    ],
+)
+def test_zvs_config_rejects_invalid_thresholds(
+    config_factory: Callable[[], ZVSAnalyzerConfig],
+) -> None:
+    with pytest.raises(WaveformSchemaError):
+        config_factory()
 
 
 def test_hysteresis_detects_noisy_gate_edges_without_duplicates() -> None:
