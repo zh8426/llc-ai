@@ -1,9 +1,10 @@
 import json
 from typing import Annotated, Any
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, UploadFile, status
 from pydantic import TypeAdapter, ValidationError
 
+from app.api.errors import APIError
 from app.schemas.waveform import (
     DeadTimeEvidenceResponse,
     DeadTimeResponse,
@@ -48,9 +49,11 @@ async def post_waveform_zvs(
     try:
         csv_bytes = await file.read(MAX_WAVEFORM_FILE_BYTES + 1)
         if len(csv_bytes) > MAX_WAVEFORM_FILE_BYTES:
-            raise HTTPException(
-                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-                detail="WAVEFORM_FILE_TOO_LARGE",
+            raise APIError(
+                status.HTTP_413_CONTENT_TOO_LARGE,
+                "WAVEFORM_TOO_LARGE",
+                "波形文件超过大小限制。",
+                details={"limit_bytes": MAX_WAVEFORM_FILE_BYTES},
             )
         csv_text = csv_bytes.decode("utf-8-sig")
         channel_payload = _parse_json_form(channels, _CHANNEL_METADATA_ADAPTER)
@@ -79,17 +82,19 @@ async def post_waveform_zvs(
                 gate_high_threshold=gate_high_threshold,
             ),
         )
-    except HTTPException:
-        raise
     except WaveformTooLargeError as error:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(error),
+        raise APIError(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "WAVEFORM_TOO_LARGE",
+            "波形文件或分析规模超过限制。",
+            details={"reason": str(error)},
         ) from error
     except (UnicodeDecodeError, ValidationError, WaveformError, json.JSONDecodeError) as error:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(error),
+        raise APIError(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "WAVEFORM_SCHEMA_INVALID",
+            "波形 CSV 或元数据不符合输入契约。",
+            details={"reason": str(error)},
         ) from error
     return _zvs_to_response(result)
 

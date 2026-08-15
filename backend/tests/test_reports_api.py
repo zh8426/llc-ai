@@ -17,7 +17,9 @@ async def test_report_requires_project_and_completed_review(
     missing_review = await api_client.get(f"/projects/{project['id']}/report")
 
     assert missing_project.status_code == 404
+    assert missing_project.json()["code"] == "PROJECT_NOT_FOUND"
     assert missing_review.status_code == 404
+    assert missing_review.json()["code"] == "REVIEW_NOT_FOUND"
 
 
 @pytest.mark.anyio

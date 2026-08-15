@@ -1,6 +1,7 @@
 """Pydantic request and response schemas."""
 
 from app.schemas.engineering import CalculationResult, EngineeringQuantity
+from app.schemas.errors import APIErrorResponse, ErrorCode
 from app.schemas.evidence import (
     EvidenceItem,
     EvidenceSource,
@@ -33,6 +34,8 @@ from app.schemas.review import (
 __all__ = [
     "CalculationResult",
     "EngineeringQuantity",
+    "APIErrorResponse",
+    "ErrorCode",
     "EvidenceItem",
     "EvidenceSource",
     "Finding",

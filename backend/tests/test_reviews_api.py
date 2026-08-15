@@ -55,6 +55,7 @@ async def test_review_api_runs_persists_and_returns_latest_review(
     latest_response = await api_client.get(f"/projects/{project_id}/review")
 
     assert missing_response.status_code == 404
+    assert missing_response.json()["code"] == "REVIEW_NOT_FOUND"
     assert run_response.status_code == 201
     review = run_response.json()
     assert calculation_calls == 1

@@ -1,8 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from app.api.errors import APIError
 from app.database import get_session
 from app.engine.exceptions import EngineeringCalculationError
 from app.models.project import Project
@@ -29,9 +30,11 @@ SessionDependency = Annotated[Session, Depends(get_session)]
 def require_project(session: Session, project_id: str) -> Project:
     project = get_project(session, project_id)
     if project is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found",
+        raise APIError(
+            status.HTTP_404_NOT_FOUND,
+            "PROJECT_NOT_FOUND",
+            "项目不存在。",
+            details={"project_id": project_id},
         )
     return project
 
@@ -57,9 +60,11 @@ def post_project(
         project = create_project(session, payload)
     except EngineeringCalculationError as error:
         session.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(error),
+        raise APIError(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "INVALID_ENGINEERING_UNIT",
+            "工程参数单位或数值无效。",
+            details={"reason": str(error)},
         ) from error
     return project_to_response(project)
 
@@ -80,11 +85,21 @@ def patch_project(
     project = require_project(session, project_id)
     try:
         project = update_project(session, project, payload)
-    except (EngineeringCalculationError, ValueError) as error:
+    except EngineeringCalculationError as error:
         session.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(error),
+        raise APIError(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "INVALID_ENGINEERING_UNIT",
+            "工程参数单位或数值无效。",
+            details={"reason": str(error)},
+        ) from error
+    except ValueError as error:
+        session.rollback()
+        raise APIError(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "INVALID_REQUEST",
+            "请求参数无效。",
+            details={"reason": str(error)},
         ) from error
     return project_to_response(project)
 

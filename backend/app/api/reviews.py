@@ -1,8 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from app.api.errors import APIError
 from app.api.projects import require_project
 from app.database import get_session
 from app.models.review import ReviewRun
@@ -40,9 +41,11 @@ def get_project_review(
     require_project(session, project_id)
     review = get_latest_review(session, project_id)
     if review is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No review has been run for this project",
+        raise APIError(
+            status.HTTP_404_NOT_FOUND,
+            "REVIEW_NOT_FOUND",
+            "该项目尚未执行设计评审。",
+            details={"project_id": project_id},
         )
     return review_to_response(review)
 
@@ -65,9 +68,11 @@ def require_review(session: Session, review_id: str) -> ReviewRun:
     try:
         return get_review(session, review_id)
     except LookupError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Review not found",
+        raise APIError(
+            status.HTTP_404_NOT_FOUND,
+            "REVIEW_NOT_FOUND",
+            "评审记录不存在。",
+            details={"review_id": review_id},
         ) from error
 
 

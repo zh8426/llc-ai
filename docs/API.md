@@ -13,6 +13,45 @@ Phase 3 提供 Project 持久化、六项确定性计算和 R001–R020 Design R
 
 API 在持久化边界校验物理维度并转换为 SI。负数等维度正确但工程上无效的值允许保存，以便 Rule Engine 返回结构化 `CRITICAL`；单位维度错误直接返回 `422`。
 
+## 统一错误响应
+
+所有 API 错误均返回统一 JSON 结构，不再要求客户端解析 FastAPI 默认的 `detail` 字符串：
+
+```json
+{
+  "code": "PROJECT_NOT_FOUND",
+  "message": "项目不存在。",
+  "details": {
+    "project_id": "missing-project"
+  }
+}
+```
+
+字段约定如下：
+
+- `code`：稳定的机器可读错误码，前端分支逻辑必须优先使用此字段。
+- `message`：面向用户的中文提示，可直接显示。
+- `details`：可选的结构化诊断信息，具体内容由错误码决定，不应作为业务分支依据。
+
+当前错误码与 HTTP 状态码：
+
+| 错误码 | HTTP | 含义 |
+| --- | ---: | --- |
+| `PROJECT_NOT_FOUND` | 404 | 项目不存在 |
+| `REVIEW_NOT_FOUND` | 404 | 评审记录不存在 |
+| `RESOURCE_NOT_FOUND` | 404 | 请求路径或资源不存在 |
+| `METHOD_NOT_ALLOWED` | 405 | 请求方法不被允许 |
+| `INVALID_ENGINEERING_UNIT` | 422 | 工程参数单位或数值无效 |
+| `MISSING_REQUIRED_DATA` | 422 | 请求缺少必要工程数据 |
+| `WAVEFORM_SCHEMA_INVALID` | 422 | 波形 CSV 或元数据不符合输入契约 |
+| `WAVEFORM_TOO_LARGE` | 413/422 | 波形文件或样本规模超过限制 |
+| `ZVS_INSUFFICIENT_DATA` | 422 | ZVS 分析缺少必要数据 |
+| `INVALID_REQUEST` | 422 | 请求参数校验失败 |
+| `DATABASE_CONFLICT` | 409 | 持久化数据无法满足当前操作 |
+| `INTERNAL_ERROR` | 500 | 未预期的服务器错误 |
+
+客户端不应依赖中文 `message` 或 `details` 的具体文本来判断错误类型；后续新增错误码时保持现有字段结构不变。
+
 ## `GET /health`
 
 确认 Backend 进程可用。成功返回 `200`：

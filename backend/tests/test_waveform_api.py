@@ -87,7 +87,7 @@ async def test_waveform_zvs_api_rejects_file_above_size_limit(
     )
 
     assert response.status_code == 413
-    assert response.json()["detail"] == "WAVEFORM_FILE_TOO_LARGE"
+    assert response.json()["code"] == "WAVEFORM_TOO_LARGE"
 
 
 @pytest.mark.anyio
@@ -116,7 +116,7 @@ async def test_waveform_zvs_api_rejects_sample_limit(
     )
 
     assert response.status_code == 422
-    assert "WAVEFORM_TOO_LARGE" in response.json()["detail"]
+    assert response.json()["code"] == "WAVEFORM_TOO_LARGE"
 
 
 @pytest.mark.anyio

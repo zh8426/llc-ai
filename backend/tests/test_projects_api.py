@@ -60,8 +60,10 @@ async def test_project_api_rejects_unknown_project_and_incompatible_units(
     )
 
     assert missing_response.status_code == 404
+    assert missing_response.json()["code"] == "PROJECT_NOT_FOUND"
     assert invalid_response.status_code == 422
-    assert "compatible with H" in invalid_response.json()["detail"]
+    assert invalid_response.json()["code"] == "INVALID_ENGINEERING_UNIT"
+    assert "compatible with H" in invalid_response.json()["details"]["reason"]
 
 
 @pytest.mark.anyio
@@ -93,4 +95,5 @@ async def test_project_patch_rejects_null_name(
     )
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "name cannot be null"
+    assert response.json()["code"] == "INVALID_REQUEST"
+    assert response.json()["details"]["reason"] == "name cannot be null"

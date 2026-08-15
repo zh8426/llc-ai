@@ -85,6 +85,6 @@ async def test_review_id_endpoints_return_not_found(
     report = await api_client.get("/reviews/not-present/report")
 
     assert review.status_code == 404
-    assert review.json()["detail"] == "Review not found"
+    assert review.json()["code"] == "REVIEW_NOT_FOUND"
     assert report.status_code == 404
-    assert report.json()["detail"] == "Review not found"
+    assert report.json()["code"] == "REVIEW_NOT_FOUND"
