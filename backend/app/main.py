@@ -1,6 +1,4 @@
 import os
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,14 +7,6 @@ from app.api.health import router as health_router
 from app.api.projects import router as projects_router
 from app.api.reports import router as reports_router
 from app.api.reviews import router as reviews_router
-from app.database import initialize_database
-
-
-@asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    initialize_database()
-    yield
-
 
 app = FastAPI(
     title="LLC Engineering Assistant API",
@@ -24,7 +14,6 @@ app = FastAPI(
         "Project persistence, deterministic LLC calculations, and design review APIs."
     ),
     version="0.1.0",
-    lifespan=lifespan,
 )
 allowed_origins = [
     origin.strip()

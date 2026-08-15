@@ -42,7 +42,21 @@ Review Summary、rule id、category、severity、title、description 和 Enginee
 
 每次运行 Review 时同时保存不可变 Project Snapshot。报告读取该 Snapshot，而不是读取之后可能已修改的当前 Project，避免规格与 Findings 失配。Snapshot 是 Review Audit Artifact；Project 当前状态仍使用结构化列作为 source of truth。
 
-开发环境默认 SQLite，通过 `DATABASE_URL` 可配置其他 SQLAlchemy Database URL。当前使用启动时 `create_all` 初始化开发数据库，尚未引入正式 migration workflow。
+开发环境默认 SQLite，通过 `DATABASE_URL` 可配置其他 SQLAlchemy Database URL。数据库 schema 由 Alembic migration 管理，当前基线 revision 为 `0001_phase0_4_baseline`。应用启动不再调用 `create_all()`，部署或本地启动前必须先执行 `python -m alembic upgrade head`。
+
+测试 fixture 可以对隔离的临时内存数据库显式调用 `Base.metadata.create_all()`；该调用只负责测试装配，不是正式 schema evolution 路径。
+
+迁移路径：
+
+```text
+空数据库
+  → alembic upgrade head
+  → Phase 0–4 schema + alembic_version
+
+旧 Phase 0–4 create_all 数据库（先备份并确认 schema）
+  → alembic stamp 0001_phase0_4_baseline
+  → 后续使用 alembic upgrade head
+```
 
 ## Unit Boundary
 

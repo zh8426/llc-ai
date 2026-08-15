@@ -107,6 +107,7 @@ Backend：
 - FastAPI
 - Pydantic
 - SQLAlchemy
+- Alembic
 - Pint
 - pytest / pytest-cov
 - Ruff
@@ -118,7 +119,7 @@ Frontend：
 - TypeScript
 - Vite
 
-后续按 Phase 引入 PostgreSQL、Alembic、NumPy、SciPy、pandas 和波形可视化依赖。
+后续按 Phase 引入 PostgreSQL、NumPy、SciPy、pandas 和波形可视化依赖。
 
 ## Repository Layout
 
@@ -160,8 +161,31 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -e ".[test]"
+python -m alembic upgrade head
 python -m uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 8000
 ```
+
+应用启动不会自动创建或修改数据库表。新建数据库或拉取包含新 migration 的代码后，应先执行：
+
+```powershell
+python -m alembic upgrade head
+python -m alembic current --check-heads
+```
+
+#### 已有 Phase 0–4 SQLite 数据库
+
+如果 `llc_assistant.sqlite3` 是旧版本通过 `create_all()` 创建的数据库，其中已经存在
+`projects`、`review_runs`、`review_findings` 和 `review_project_snapshots` 四张表，不能直接对它执行首个 baseline 的建表操作。
+
+先备份数据库并确认它确实来自提交 `81ee4d3` 或相同 Phase 0–4 schema，然后执行一次：
+
+```powershell
+Copy-Item .\llc_assistant.sqlite3 .\llc_assistant.before-alembic.sqlite3
+python -m alembic stamp 0001_phase0_4_baseline
+python -m alembic current --check-heads
+```
+
+`stamp` 只记录 schema 版本，不创建、删除或修改业务表。不要对来源不明或结构不同的数据库执行该命令；应先人工核对 schema。
 
 Health check：
 
