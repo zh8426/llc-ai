@@ -110,4 +110,20 @@ export type Review = {
   excluded_findings: Finding[]
 }
 
+export type ReviewHistoryItem = {
+  review_id: string
+  created_at: string
+  summary: Review['summary']
+  calculation_snapshot: {
+    calculated_at: string
+    engine_version: string
+    calculation_count: number
+  } | null
+}
+
+export type ProjectReviewHistory = {
+  project_id: string
+  reviews: ReviewHistoryItem[]
+}
+
 export type ProjectPayload = Record<string, unknown>

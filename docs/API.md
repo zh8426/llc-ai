@@ -157,6 +157,33 @@ datasheet 或 waveform-derived evidence。
 
 返回最近一次已持久化 Review。Project 不存在或从未运行 Review 时返回 `404`。
 
+## `GET /projects/{project_id}/reviews`
+
+按创建时间倒序返回 Project 的全部 Review 历史。列表项只包含：
+
+```text
+review_id
+created_at
+summary
+calculation_snapshot.calculated_at
+calculation_snapshot.engine_version
+calculation_snapshot.calculation_count
+```
+
+列表不展开 Findings。Project 存在但尚未运行 Review 时返回空 `reviews`；Project
+不存在时返回 `404`。
+
+## `GET /reviews/{review_id}`
+
+通过 Review ID 返回任意一次已持久化 Review，包括当时保存的 Calculation Snapshot、
+正式 Findings 和 `excluded_findings`。Review 不存在时返回 `404`。
+
+## `GET /reviews/{review_id}/report`
+
+使用指定历史 Review 的不可变 Project Snapshot、Calculation Snapshot 和 Findings
+生成 HTML Report。该 endpoint 不读取当前 Project 参数，也不重新执行计算或规则。
+Review 不存在时返回 `404`；旧 Review 缺少必要 Snapshot 时返回 `409`。
+
 ## `GET /projects/{project_id}/report`
 
 将最近一次 Review 渲染为自包含、可打印的中文 HTML Design Review Report，成功返回 `200 text/html`。

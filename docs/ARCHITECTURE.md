@@ -109,6 +109,11 @@ Frontend 不执行 LLC 公式或 Engineering Rule，只负责结构化输入与�
 
 HTML renderer 负责转义用户文本、组织章节、从持久化 Calculation Snapshot 展示完整六项计算与 Formula Version，并附加 Engineering Disclaimer。它不得从 Finding 拼装基础计算表、重新计算数值、修改 Severity 或恢复被 R020 隔离的 Finding。
 
+Review History API 直接查询持久化的 Review Artifact：项目列表 endpoint 返回轻量
+Summary 和 Calculation Snapshot 摘要，Review ID endpoint 返回完整历史 Artifact，
+历史 Report endpoint 复用同一个只读 renderer。Project 后续修改不会改变旧 Review
+或旧 Report。
+
 ## Phase Boundary
 
 Phase 4 不包含：PDF Report、Waveform、ZVS classification、Datasheet/BOM Parser、Fault Diagnosis、LLM/RAG/AI Chat、Authentication、Payment 或 Cloud Deployment。

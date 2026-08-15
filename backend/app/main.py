@@ -5,7 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.health import router as health_router
 from app.api.projects import router as projects_router
+from app.api.reports import history_router as historical_reports_router
 from app.api.reports import router as reports_router
+from app.api.reviews import history_router as review_history_router
 from app.api.reviews import router as reviews_router
 
 app = FastAPI(
@@ -32,4 +34,6 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(projects_router)
 app.include_router(reviews_router)
+app.include_router(review_history_router)
 app.include_router(reports_router)
+app.include_router(historical_reports_router)

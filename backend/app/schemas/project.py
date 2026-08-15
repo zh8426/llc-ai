@@ -154,3 +154,27 @@ class ProjectReviewResponse(BaseModel):
     findings: tuple[Finding, ...]
     excluded_findings: tuple[Finding, ...] = ()
     calculation_snapshot: CalculationSnapshot | None = None
+
+
+class ReviewCalculationSnapshotSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    calculated_at: datetime
+    engine_version: str
+    calculation_count: int = Field(ge=0)
+
+
+class ReviewHistoryItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    review_id: str
+    created_at: datetime
+    summary: ReviewSummary
+    calculation_snapshot: ReviewCalculationSnapshotSummary | None
+
+
+class ProjectReviewHistoryResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    project_id: str
+    reviews: tuple[ReviewHistoryItem, ...]

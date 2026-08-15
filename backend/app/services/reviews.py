@@ -1,4 +1,4 @@
-from datetime import UTC
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -12,7 +12,11 @@ from app.models.review import (
 )
 from app.rules import run_design_review
 from app.schemas.engineering import CalculationSnapshot
-from app.schemas.project import ProjectReviewResponse
+from app.schemas.project import (
+    ProjectReviewResponse,
+    ReviewCalculationSnapshotSummary,
+    ReviewHistoryItem,
+)
 from app.schemas.review import (
     ControllerReviewInput,
     Finding,
@@ -201,6 +205,54 @@ def get_latest_review(session: Session, project_id: str) -> ReviewRun | None:
     return session.scalar(statement)
 
 
+def list_reviews(session: Session, project_id: str) -> tuple[ReviewRun, ...]:
+    statement = (
+        select(ReviewRun)
+        .where(ReviewRun.project_id == project_id)
+        .order_by(ReviewRun.created_at.desc(), ReviewRun.id.desc())
+        .options(selectinload(ReviewRun.calculation_snapshot))
+    )
+    return tuple(session.scalars(statement))
+
+
+def review_to_history_item(review: ReviewRun) -> ReviewHistoryItem:
+    calculation_snapshot = review.calculation_snapshot
+    return ReviewHistoryItem(
+        review_id=review.id,
+        created_at=_as_utc(review.created_at),
+        summary=_review_summary(review),
+        calculation_snapshot=(
+            ReviewCalculationSnapshotSummary(
+                calculated_at=_as_utc(calculation_snapshot.calculated_at),
+                engine_version=calculation_snapshot.engine_version,
+                calculation_count=len(calculation_snapshot.calculations),
+            )
+            if calculation_snapshot is not None
+            else None
+        ),
+    )
+
+
+def _as_utc(value: datetime) -> datetime:
+    return (
+        value.replace(tzinfo=UTC)
+        if value.tzinfo is None
+        else value.astimezone(UTC)
+    )
+
+
+def _review_summary(review: ReviewRun) -> ReviewSummary:
+    return ReviewSummary.model_validate(
+        {
+            "pass": review.pass_count,
+            "info": review.info_count,
+            "warning": review.warning_count,
+            "critical": review.critical_count,
+            "insufficient_data": review.insufficient_data_count,
+        }
+    )
+
+
 def review_to_response(review: ReviewRun) -> ProjectReviewResponse:
     stored_findings = tuple(
         Finding.model_validate(
@@ -231,30 +283,16 @@ def review_to_response(review: ReviewRun) -> ProjectReviewResponse:
     return ProjectReviewResponse(
         project_id=review.project_id,
         review_id=review.id,
-        created_at=(
-            review.created_at.replace(tzinfo=UTC)
-            if review.created_at.tzinfo is None
-            else review.created_at.astimezone(UTC)
-        ),
-        summary=ReviewSummary.model_validate(
-            {
-                "pass": review.pass_count,
-                "info": review.info_count,
-                "warning": review.warning_count,
-                "critical": review.critical_count,
-                "insufficient_data": review.insufficient_data_count,
-            }
-        ),
+        created_at=_as_utc(review.created_at),
+        summary=_review_summary(review),
         findings=findings,
         excluded_findings=excluded_findings,
         calculation_snapshot=(
             CalculationSnapshot.model_validate(
                 {
                     "project_id": review.project_id,
-                    "calculated_at": (
-                        review.calculation_snapshot.calculated_at.replace(tzinfo=UTC)
-                        if review.calculation_snapshot.calculated_at.tzinfo is None
-                        else review.calculation_snapshot.calculated_at.astimezone(UTC)
+                    "calculated_at": _as_utc(
+                        review.calculation_snapshot.calculated_at
                     ),
                     "engine_version": review.calculation_snapshot.engine_version,
                     "calculations": review.calculation_snapshot.calculations,
