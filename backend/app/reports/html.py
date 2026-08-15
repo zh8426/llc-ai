@@ -9,6 +9,79 @@ from app.schemas.evidence import MeasurementEvidence
 from app.schemas.project import ProjectResponse, ProjectReviewResponse
 from app.schemas.review import EvidenceItem, Finding, Severity
 
+SEVERITY_LABELS = {
+    Severity.PASS: "通过",
+    Severity.INFO: "提示",
+    Severity.WARNING: "警告",
+    Severity.CRITICAL: "严重",
+    Severity.INSUFFICIENT_DATA: "数据不足",
+}
+
+FINDING_TITLE_LABELS = {
+    "LLC-R001": "关键参数完整性",
+    "LLC-R002": "工程量正值检查",
+    "LLC-R003": "输入电压顺序",
+    "LLC-R004": "开关频率顺序",
+    "LLC-R005": "串联谐振频率",
+    "LLC-R006": "低端谐振频率",
+    "LLC-R007": "谐振频率与工作范围",
+    "LLC-R008": "电感比 Lm/Lr",
+    "LLC-R009": "谐振腔特征阻抗",
+    "LLC-R010": "输出功率一致性",
+    "LLC-R011": "MOSFET 静态耐压检查",
+    "LLC-R012": "MOSFET 实测 VDS 峰值",
+    "LLC-R013": "MOSFET 电流检查",
+    "LLC-R014": "谐振电容耐压检查",
+    "LLC-R015": "谐振电容 RMS 电流",
+    "LLC-R016": "控制器频率能力",
+    "LLC-R017": "死区时间信息",
+    "LLC-R018": "变压器匝比要求",
+    "LLC-R019": "增益评审前置条件",
+    "LLC-R020": "依据完整性检查",
+}
+
+EVIDENCE_SOURCE_LABELS = {
+    "user_input": "用户输入",
+    "calculation": "确定性计算",
+    "datasheet": "数据手册",
+    "waveform": "波形",
+    "rule_definition": "规则定义",
+    "verified_fault_case": "已验证故障案例",
+}
+
+CALCULATION_LABELS = {
+    "resonant_frequency": "串联谐振频率 fr",
+    "lower_resonant_frequency": "低端谐振频率 fp",
+    "characteristic_impedance": "谐振腔特征阻抗 Zr",
+    "lm_lr_ratio": "电感比 Lm/Lr",
+    "output_current": "输出电流 Iout",
+    "input_power": "输入功率 Pin",
+}
+
+DATA_LABELS = {
+    "vin_min": "最小输入电压 Vin Min",
+    "vin_nom": "标称输入电压 Vin Nom",
+    "vin_max": "最大输入电压 Vin Max",
+    "vout": "输出电压 Vout",
+    "iout": "输出电流 Iout",
+    "pout": "输出功率 Pout",
+    "lr": "谐振电感 Lr",
+    "lm": "励磁电感 Lm",
+    "cr": "谐振电容 Cr",
+    "fsw_min": "最低开关频率 Fsw Min",
+    "fsw_max": "最高开关频率 Fsw Max",
+    "transformer_ratio": "变压器匝比",
+    "dead_time": "死区时间",
+    "mosfet_vds_rating": "MOSFET VDS 额定值",
+    "measured_vds_peak": "实测 VDS 峰值",
+    "measured_peak_current": "实测峰值电流",
+    "current_rating": "器件电流额定值",
+    "capacitor_voltage_rating": "谐振电容额定电压",
+    "capacitor_voltage_stress": "谐振电容电压应力",
+    "capacitor_rms_current_rating": "谐振电容 RMS 电流额定值",
+    "capacitor_rms_current_stress": "谐振电容 RMS 电流应力",
+}
+
 
 def _text(value: object) -> str:
     return escape(str(value), quote=True)
@@ -47,11 +120,11 @@ def _specification_rows(project: ProjectResponse) -> str:
         ("开关频率 Fsw Nom", _quantity(project.fsw_nom)),
         ("开关频率 Fsw Max", _quantity(project.fsw_max)),
         ("变压器匝比", _quantity(project.transformer_ratio)),
-        ("Dead Time", _quantity(project.dead_time)),
+        ("死区时间", _quantity(project.dead_time)),
         ("整流方式", _text(project.rectification_type)),
         ("主开关制造商", _optional_text(project.primary_switch.manufacturer)),
         ("主开关型号", _optional_text(project.primary_switch.part_number)),
-        ("MOSFET VDS Rating", _quantity(project.primary_switch.vds_rating)),
+        ("MOSFET VDS 额定值", _quantity(project.primary_switch.vds_rating)),
         ("控制器型号", _optional_text(project.controller.model)),
         ("控制器最低频率", _quantity(project.controller.frequency_min)),
         ("控制器最高频率", _quantity(project.controller.frequency_max)),
@@ -70,7 +143,7 @@ def _calculation_rows(
         versions.add(result.formula_version)
         rows.append(
             "<tr>"
-            f"<td>{_text(result.name)}</td>"
+            f"<td>{_text(CALCULATION_LABELS.get(result.name, result.name))}</td>"
             f"<td>{_text(_number(result.value))}</td>"
             f"<td>{_text(result.unit)}</td>"
             f"<td><code>{_text(result.formula_version)}</code></td>"
@@ -98,7 +171,7 @@ def _evidence_item(evidence: EvidenceItem) -> str:
     )
     return (
         '<li class="evidence-item">'
-        f'<span class="source">{_text(evidence.source.value)}</span>'
+        f'<span class="source">{_text(EVIDENCE_SOURCE_LABELS[evidence.source.value])}</span>'
         f"<p>{_text(evidence.description)}</p>"
         f"{'<ul>' + values + '</ul>' if values else ''}"
         f"{'<ul class=\"measurement-list\">' + measurements + '</ul>' if measurements else ''}"
@@ -137,6 +210,14 @@ def _measurement_evidence(name: str, measurement: MeasurementEvidence) -> str:
 
 
 def _finding_card(finding: Finding) -> str:
+    input_values: dict[str, EngineeringQuantity] = {}
+    for evidence_item in finding.evidence:
+        if evidence_item.source.value == "user_input":
+            input_values.update(evidence_item.values)
+    input_markup = "".join(
+        f"<li><code>{_text(DATA_LABELS.get(name, name))}</code>: {_quantity(value)}</li>"
+        for name, value in input_values.items()
+    )
     calculated_values = "".join(
         (
             f"<li><code>{_text(name)}</code>: {_text(_number(value.value))} "
@@ -158,7 +239,7 @@ def _finding_card(finding: Finding) -> str:
     )
     evidence = "".join(_evidence_item(item) for item in finding.evidence)
     confirmation = (
-        '<p class="engineer-confirmation">Requires qualified engineer review.</p>'
+        '<p class="engineer-confirmation">需要具备相应资质的工程师确认。</p>'
         if finding.requires_engineer_confirmation
         else ""
     )
@@ -166,33 +247,41 @@ def _finding_card(finding: Finding) -> str:
         f'<article class="finding finding-{finding.severity.value.lower()}">'
         '<div class="finding-heading">'
         f'<code class="rule-id">{_text(finding.rule_id)}</code>'
-        f"<h3>{_text(finding.title)}</h3>"
-        f'<span class="badge">{_text(finding.severity.value)}</span>'
+        f"<h3>{_text(FINDING_TITLE_LABELS.get(finding.rule_id, finding.title))}</h3>"
+        f'<span class="badge">{_text(SEVERITY_LABELS[finding.severity])}</span>'
         "</div>"
-        f"<p>{_text(finding.description)}</p>"
+        '<div class="finding-detail"><h4>为什么</h4>'
+        f"<p>{_text(finding.description)}</p></div>"
+        '<div class="finding-detail"><h4>输入数据</h4>'
         + (
-            '<div class="finding-detail"><h4>Calculated Data</h4><ul>'
+            f"<ul>{input_markup}</ul>"
+            if input_markup
+            else '<p class="empty-message">无直接用户输入数据。</p>'
+        )
+        + "</div>"
+        + (
+            '<div class="finding-detail"><h4>计算数据</h4><ul>'
             + calculated_values
             + "</ul></div>"
             if calculated_values
             else ""
         )
         + (
-            '<div class="finding-detail"><h4>Evidence</h4><ul class="evidence-list">'
+            '<div class="finding-detail"><h4>依据</h4><ul class="evidence-list">'
             + evidence
             + "</ul></div>"
             if evidence
             else ""
         )
         + (
-            '<div class="finding-detail"><h4>Missing Information</h4><ul>'
+            '<div class="finding-detail"><h4>缺失信息</h4><ul>'
             + missing
             + "</ul></div>"
             if missing
             else ""
         )
         + (
-            '<div class="finding-detail"><h4>Recommended Next Step</h4><ul>'
+            '<div class="finding-detail"><h4>建议下一步</h4><ul>'
             + actions
             + "</ul></div>"
             if actions
@@ -242,7 +331,7 @@ def render_design_review_report(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{_text(project.name)} · LLC Design Review Report</title>
+  <title>{_text(project.name)} · LLC 设计评审报告</title>
   <style>
     :root {{ color: #20312b; background: #eef1ef; font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif; }}
     * {{ box-sizing: border-box; }}
@@ -291,12 +380,12 @@ def render_design_review_report(
 <body>
 <main>
   <header>
-    <p class="eyebrow">LLC ENGINEERING ASSISTANT · DESIGN REVIEW REPORT</p>
+    <p class="eyebrow">LLC 工程评审助手 · 设计评审报告</p>
     <h1>{_text(project.name)}</h1>
     <div class="metadata">
-      <span>Project ID: <code>{_text(project.id)}</code></span>
-      <span>Review ID: <code>{_text(review.review_id)}</code></span>
-      <span>Review Time: {_text(review.created_at.isoformat())}</span>
+      <span>项目编号：<code>{_text(project.id)}</code></span>
+      <span>评审编号：<code>{_text(review.review_id)}</code></span>
+      <span>评审时间：{_text(review.created_at.isoformat())}</span>
     </div>
   </header>
 
@@ -308,43 +397,43 @@ def render_design_review_report(
   <section class="report-section">
     <h2>2. 结构化计算结果</h2>
     <table class="calculation-table">
-      <thead><tr><th>Result</th><th>Value</th><th>Unit</th><th>Formula Version</th></tr></thead>
+      <thead><tr><th>计算结果</th><th>数值</th><th>单位</th><th>计算公式版本</th></tr></thead>
       <tbody>{calculation_rows}</tbody>
     </table>
   </section>
 
   <section class="report-section">
-    <h2>3. Review Summary</h2>
+    <h2>3. 评审摘要</h2>
     <div class="summary-grid">
-      <div class="summary-card"><span>PASS</span><strong>{summary.pass_count}</strong></div>
-      <div class="summary-card"><span>INFO</span><strong>{summary.info}</strong></div>
-      <div class="summary-card"><span>WARNING</span><strong>{summary.warning}</strong></div>
-      <div class="summary-card"><span>CRITICAL</span><strong>{summary.critical}</strong></div>
-      <div class="summary-card"><span>INSUFFICIENT DATA</span><strong>{summary.insufficient_data}</strong></div>
+      <div class="summary-card"><span>通过</span><strong>{summary.pass_count}</strong></div>
+      <div class="summary-card"><span>提示</span><strong>{summary.info}</strong></div>
+      <div class="summary-card"><span>警告</span><strong>{summary.warning}</strong></div>
+      <div class="summary-card"><span>严重</span><strong>{summary.critical}</strong></div>
+      <div class="summary-card"><span>数据不足</span><strong>{summary.insufficient_data}</strong></div>
     </div>
   </section>
 
-  {_finding_section("4. Critical Findings", findings_by_severity[Severity.CRITICAL], "本次 Review 没有 CRITICAL Finding。")}
-  {_finding_section("5. Warnings", findings_by_severity[Severity.WARNING], "本次 Review 没有 WARNING Finding。")}
-  {_finding_section("6. Missing Information", findings_by_severity[Severity.INSUFFICIENT_DATA], "本次 Review 没有 INSUFFICIENT_DATA Finding。")}
-  {_finding_section("7. Passed Checks", findings_by_severity[Severity.PASS], "本次 Review 没有 PASS Finding。")}
-  {_finding_section("8. Information Findings", findings_by_severity[Severity.INFO], "本次 Review 没有 INFO Finding。")}
+  {_finding_section("4. 严重问题", findings_by_severity[Severity.CRITICAL], "本次评审没有严重问题。")}
+  {_finding_section("5. 警告项", findings_by_severity[Severity.WARNING], "本次评审没有警告项。")}
+  {_finding_section("6. 数据不足项", findings_by_severity[Severity.INSUFFICIENT_DATA], "本次评审没有数据不足项。")}
+  {_finding_section("7. 已通过检查", findings_by_severity[Severity.PASS], "本次评审没有通过项。")}
+  {_finding_section("8. 提示项", findings_by_severity[Severity.INFO], "本次评审没有提示项。")}
 
   <section class="report-section">
-    <h2>9. Calculation Versions</h2>
+    <h2>9. 计算版本</h2>
     <ul>{versions_markup}</ul>
   </section>
 
   <section class="report-section">
-    <h2>10. Engineering Disclaimer</h2>
+    <h2>10. 工程说明与免责声明</h2>
     <div class="disclaimer">
-      <p>本报告由确定性计算结果和结构化 Design Review Finding 生成，仅用于辅助具备专业能力的电力电子工程师进行研发评审。</p>
-      <p>本报告不是安全认证、法规符合性证明或量产批准。PASS 仅表示对应有限规则通过；缺少器件条件、实测波形、温度、容差、保护与验证数据时，不得据此声明设计安全。</p>
-      <p>任何 WARNING、CRITICAL 或高风险工程决策均需要合格工程师结合原始 Evidence 复核。</p>
+      <p>本报告由确定性计算结果和结构化设计评审项生成，仅用于辅助具备专业能力的电力电子工程师进行研发评审。</p>
+      <p>本报告不是安全认证、法规符合性证明或量产批准。“通过”仅表示对应有限规则通过；缺少器件条件、实测波形、温度、容差、保护与验证数据时，不得据此声明设计安全。</p>
+      <p>任何警告、严重问题或高风险工程决策均需要合格工程师结合原始依据复核。</p>
     </div>
   </section>
 
-  <footer>Generated from persisted Review ID {_text(review.review_id)}. The reporting layer did not recalculate engineering results.</footer>
+  <footer>根据已持久化的评审记录 {_text(review.review_id)} 生成；报告层未重新执行工程计算。</footer>
 </main>
 </body>
 </html>"""

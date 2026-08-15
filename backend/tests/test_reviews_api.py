@@ -1,3 +1,5 @@
+from typing import cast
+
 import httpx
 import pytest
 from sqlalchemy import select
@@ -6,6 +8,28 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.models.review import ReviewFinding
 from app.schemas.review import Finding, ReviewResult, ReviewSummary, Severity
 from app.services import reviews as review_service
+
+
+def assert_user_facing_finding_is_localized(finding: dict[str, object]) -> None:
+    english_markers = (
+        "The ",
+        " is ",
+        " cannot ",
+        "Provide ",
+        "Correct ",
+        "Review ",
+        "User-provided",
+        "Calculated ",
+    )
+    recommended_actions = cast(list[object], finding["recommended_action"])
+    evidence = cast(list[dict[str, object]], finding["evidence"])
+    text_values = [
+        str(finding["title"]),
+        str(finding["description"]),
+        *(str(item) for item in recommended_actions),
+        *(str(item["description"]) for item in evidence),
+    ]
+    assert not any(marker in text for marker in english_markers for text in text_values)
 
 
 @pytest.mark.anyio
@@ -44,6 +68,8 @@ async def test_review_api_runs_persists_and_returns_latest_review(
     assert [finding["rule_id"] for finding in review["findings"]] == [
         f"LLC-R{number:03d}" for number in range(1, 21)
     ]
+    for finding in review["findings"]:
+        assert_user_facing_finding_is_localized(finding)
     calculation_snapshot = review["calculation_snapshot"]
     assert calculation_snapshot["engine_version"] == "LLC-CALCULATION-ENGINE-V1"
     assert len(calculation_snapshot["calculations"]) == 6
@@ -80,6 +106,8 @@ async def test_review_api_exposes_evidence_for_critical_findings(
     critical = [finding for finding in findings if finding["severity"] == "CRITICAL"]
     assert critical
     assert all(finding["evidence"] for finding in critical)
+    for finding in findings:
+        assert_user_facing_finding_is_localized(finding)
     assert next(
         finding for finding in findings if finding["rule_id"] == "LLC-R003"
     )["severity"] == "CRITICAL"
@@ -109,6 +137,8 @@ async def test_review_api_reports_incomplete_project_without_guessing_values(
         finding["severity"] != "WARNING" or finding["evidence"]
         for finding in review["findings"]
     )
+    for finding in review["findings"]:
+        assert_user_facing_finding_is_localized(finding)
 
 
 @pytest.mark.anyio

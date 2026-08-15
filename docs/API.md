@@ -153,6 +153,10 @@ R012–R015 的相关 Evidence 可包含 `measurements` 映射。每项均保留
 `source_type=user_input`、`human_verified=false`；API 不会自动把它升级为
 datasheet 或 waveform-derived evidence。
 
+API 的用户可见 Finding 标题、说明、建议和 Evidence 说明使用中文展示文案；
+Rule ID、Severity 枚举值、字段名、Formula Version 和结构化数值保持原英文契约。
+数据库仍保留规则运行时的原始审计文本，本地化不会改变工程判断。
+
 ## `GET /projects/{project_id}/review`
 
 返回最近一次已持久化 Review。Project 不存在或从未运行 Review 时返回 `404`。

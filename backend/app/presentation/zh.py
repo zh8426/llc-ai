@@ -1,0 +1,142 @@
+from app.schemas.review import EvidenceItem, Finding, Severity
+
+TITLES = {
+    "LLC-R001": "关键参数完整性",
+    "LLC-R002": "工程量正值检查",
+    "LLC-R003": "输入电压顺序",
+    "LLC-R004": "开关频率顺序",
+    "LLC-R005": "串联谐振频率",
+    "LLC-R006": "低端谐振频率",
+    "LLC-R007": "谐振频率与工作范围",
+    "LLC-R008": "电感比 Lm/Lr",
+    "LLC-R009": "谐振腔特征阻抗",
+    "LLC-R010": "输出功率一致性",
+    "LLC-R011": "MOSFET 静态耐压检查",
+    "LLC-R012": "MOSFET 实测 VDS 峰值",
+    "LLC-R013": "MOSFET 电流检查",
+    "LLC-R014": "谐振电容耐压检查",
+    "LLC-R015": "谐振电容 RMS 电流",
+    "LLC-R016": "控制器频率能力",
+    "LLC-R017": "死区时间信息",
+    "LLC-R018": "变压器匝比要求",
+    "LLC-R019": "增益评审前置条件",
+    "LLC-R020": "依据完整性检查",
+}
+
+DESCRIPTIONS: dict[tuple[str, Severity], str] = {
+    ("LLC-R001", Severity.PASS): "关键项目参数已完整提供。",
+    ("LLC-R001", Severity.INSUFFICIENT_DATA): "关键项目参数不完整，无法形成完整的核心输入集合。",
+    ("LLC-R002", Severity.PASS): "已提供的核心工程量均为正值且量纲有效。",
+    ("LLC-R002", Severity.INSUFFICIENT_DATA): "部分核心工程量缺失、非正值或单位不兼容。",
+    ("LLC-R003", Severity.PASS): "输入电压满足 Vin Min ≤ Vin Nom ≤ Vin Max。",
+    ("LLC-R003", Severity.CRITICAL): "输入电压范围未按 Vin Min ≤ Vin Nom ≤ Vin Max 排列。",
+    ("LLC-R003", Severity.INSUFFICIENT_DATA): "输入电压数据缺失或无效，无法检查其顺序。",
+    ("LLC-R004", Severity.PASS): "最低开关频率小于最高开关频率。",
+    ("LLC-R004", Severity.CRITICAL): "最低开关频率必须严格小于最高开关频率。",
+    ("LLC-R004", Severity.INSUFFICIENT_DATA): "开关频率数据缺失或无效，无法检查其顺序。",
+    ("LLC-R005", Severity.INFO): "已通过确定性计算得到串联谐振频率。",
+    ("LLC-R005", Severity.INSUFFICIENT_DATA): "缺少有效的 Lr 或 Cr，无法计算串联谐振频率。",
+    ("LLC-R006", Severity.INFO): "已使用项目定义的公式确定性计算低端谐振频率。",
+    ("LLC-R006", Severity.INSUFFICIENT_DATA): "缺少有效的 Lr、Lm 或 Cr，无法计算低端谐振频率。",
+    ("LLC-R007", Severity.PASS): "计算得到的谐振频率严格位于配置的开关频率范围内。",
+    ("LLC-R007", Severity.WARNING): "计算得到的谐振频率不在配置的开关频率范围内部。",
+    ("LLC-R007", Severity.INSUFFICIENT_DATA): "谐振腔或开关频率数据不足，无法检查工作范围。",
+    ("LLC-R008", Severity.INFO): "电感比 Lm/Lr 仅作为观察值报告，未应用通用合格阈值。",
+    ("LLC-R008", Severity.INSUFFICIENT_DATA): "缺少有效的 Lr 或 Lm，无法计算电感比。",
+    ("LLC-R009", Severity.INFO): "已确定性计算并报告谐振腔特征阻抗。",
+    ("LLC-R009", Severity.INSUFFICIENT_DATA): "缺少有效的 Lr 或 Cr，无法计算谐振腔特征阻抗。",
+    ("LLC-R010", Severity.PASS): "Vout × Iout 与 Pout 的差异处于项目配置容差内。",
+    ("LLC-R010", Severity.WARNING): "Vout × Iout 与 Pout 的差异超过项目配置容差。",
+    ("LLC-R010", Severity.INSUFFICIENT_DATA): "功率参数或项目容差不足，无法检查输出功率一致性。",
+    ("LLC-R011", Severity.PASS): "静态耐压检查通过；该结果不包含尖峰、振铃和瞬态条件，不代表 MOSFET 电压安全。",
+    ("LLC-R011", Severity.CRITICAL): "MOSFET VDS 额定值小于或等于最大输入电压 Vin Max。",
+    ("LLC-R011", Severity.INSUFFICIENT_DATA): "MOSFET VDS 额定值或最大输入电压缺失、无效。",
+    ("LLC-R012", Severity.PASS): "实测 VDS 裕量满足项目配置要求。",
+    ("LLC-R012", Severity.INFO): "实测 VDS 峰值未超过额定值，但未配置项目裕量要求；本次只完成绝对额定值比较。",
+    ("LLC-R012", Severity.WARNING): "实测 VDS 裕量低于项目配置要求。",
+    ("LLC-R012", Severity.CRITICAL): "实测 VDS 峰值超过 MOSFET 绝对额定值。",
+    ("LLC-R012", Severity.INSUFFICIENT_DATA): "MOSFET VDS 额定值或实测峰值缺失、无效。",
+    ("LLC-R013", Severity.INFO): "实测峰值电流未超过给定条件下的器件额定值；该结果不是完整的电流安全结论。",
+    ("LLC-R013", Severity.CRITICAL): "实测峰值电流超过给定的器件电流额定值。",
+    ("LLC-R013", Severity.INSUFFICIENT_DATA): "电流值、额定值或温度条件不足，无法进行可比检查。",
+    ("LLC-R014", Severity.INFO): "给定电压应力未超过额定值；未应用项目电压裕量，该结果不是安全结论。",
+    ("LLC-R014", Severity.CRITICAL): "给定的谐振电容电压应力超过其额定值。",
+    ("LLC-R014", Severity.INSUFFICIENT_DATA): "谐振电容额定电压或电压应力缺失、无效。",
+    ("LLC-R015", Severity.INFO): "给定 RMS 电流应力未超过额定值；该结果不是热或寿命结论。",
+    ("LLC-R015", Severity.CRITICAL): "给定的谐振电容 RMS 电流应力超过其额定值。",
+    ("LLC-R015", Severity.INSUFFICIENT_DATA): "谐振电容 RMS 电流额定值或应力缺失、无效。",
+    ("LLC-R016", Severity.PASS): "控制器频率范围覆盖项目开关频率范围。",
+    ("LLC-R016", Severity.WARNING): "控制器频率范围未覆盖完整的项目开关频率范围。",
+    ("LLC-R016", Severity.CRITICAL): "给定的项目或控制器频率范围顺序无效。",
+    ("LLC-R016", Severity.INSUFFICIENT_DATA): "项目或控制器频率数据不足，无法检查频率能力。",
+    ("LLC-R017", Severity.INFO): "未请求 ZVS 分析，本次评审不要求死区时间。",
+    ("LLC-R017", Severity.PASS): "已为请求的 ZVS 分析提供有效死区时间；本阶段不执行 ZVS 判定。",
+    ("LLC-R017", Severity.INSUFFICIENT_DATA): "已请求 ZVS 分析，但死区时间缺失或无效。",
+    ("LLC-R018", Severity.INFO): "未请求完整增益评审，本规则不要求变压器匝比。",
+    ("LLC-R018", Severity.PASS): "已提供有效变压器匝比作为增益评审前置数据；本规则不计算增益。",
+    ("LLC-R018", Severity.INSUFFICIENT_DATA): "已请求完整增益评审，但变压器匝比缺失或无效。",
+    ("LLC-R019", Severity.INFO): "未请求完整增益评审，因此不检查增益评审前置参数。",
+    ("LLC-R019", Severity.PASS): "项目配置的增益评审前置参数均已提供；本规则不计算增益。",
+    ("LLC-R019", Severity.INSUFFICIENT_DATA): "增益评审前置参数列表未配置或所需参数不完整。",
+    ("LLC-R020", Severity.PASS): "所有警告和严重评审项均包含可追溯依据。",
+    ("LLC-R020", Severity.WARNING): "一个或多个警告或严重评审项缺少依据，不能进入正式报告。",
+}
+
+ACTIONS = {
+    "LLC-R001": "补充所有缺失的核心项目参数，并明确填写单位。",
+    "LLC-R002": "修正列出的工程量数值或单位后重新评审。",
+    "LLC-R003": "修正项目输入电压定义后重新评审。",
+    "LLC-R004": "修正项目开关频率范围后重新评审。",
+    "LLC-R005": "补充或修正 Lr、Cr 及其单位。",
+    "LLC-R006": "补充或修正 Lr、Lm、Cr 及其单位。",
+    "LLC-R007": "复核预期工作范围与谐振腔参数；该警告本身不代表设计失败。",
+    "LLC-R008": "补充或修正 Lr、Lm 及其单位。",
+    "LLC-R009": "补充或修正 Lr、Cr 及其单位。",
+    "LLC-R010": "确认 Pout、Vout 与 Iout 描述同一工作点，并配置项目容差。",
+    "LLC-R011": "由工程师复核器件耐压、母线电压以及未覆盖的瞬态应力。",
+    "LLC-R012": "复核测量条件、波形与项目批准的 VDS 裕量要求。",
+    "LLC-R013": "复核电流应力、额定条件与热条件。",
+    "LLC-R014": "复核电压应力依据和谐振电容选型。",
+    "LLC-R015": "复核 RMS 电流应力、额定条件和谐振电容选型。",
+    "LLC-R016": "复核控制器选型和项目开关频率范围。",
+    "LLC-R017": "为 ZVS 分析补充有效死区时间；本阶段不执行 ZVS 判定。",
+    "LLC-R018": "补充有效变压器匝比后再进行增益评审。",
+    "LLC-R019": "配置项目批准的前置参数列表并补齐所需数据。",
+    "LLC-R020": "为被隔离的评审项补充可追溯依据，或移除不受支持的结论。",
+}
+
+EVIDENCE_DESCRIPTIONS = {
+    "user_input": "本评审项使用的用户输入数据。",
+    "calculation": "确定性计算引擎生成的计算依据。",
+    "datasheet": "器件数据手册依据。",
+    "waveform": "实测波形依据。",
+    "rule_definition": "本评审项使用的规则定义。",
+    "verified_fault_case": "经过工程师验证的故障案例依据。",
+}
+
+
+def localize_finding(finding: Finding) -> Finding:
+    evidence = tuple(
+        EvidenceItem(
+            source=item.source,
+            description=EVIDENCE_DESCRIPTIONS[item.source.value],
+            values=item.values,
+            measurements=item.measurements,
+            references=item.references,
+        )
+        for item in finding.evidence
+    )
+    return finding.model_copy(
+        update={
+            "title": TITLES.get(finding.rule_id, finding.title),
+            "description": DESCRIPTIONS.get(
+                (finding.rule_id, finding.severity), finding.description
+            ),
+            "evidence": evidence,
+            "recommended_action": (
+                (ACTIONS[finding.rule_id],)
+                if finding.recommended_action and finding.rule_id in ACTIONS
+                else finding.recommended_action
+            ),
+        }
+    )

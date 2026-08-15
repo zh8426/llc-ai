@@ -49,8 +49,13 @@ async def test_report_renders_chinese_self_contained_html_from_review_snapshot(
     assert "LLC-R020" in response.text
     assert "source_type=user_input" in response.text
     assert "human_verified=false" in response.text
-    assert "Engineering Disclaimer" in response.text
-    assert "The reporting layer did not recalculate engineering results." in response.text
+    assert "工程说明与免责声明" in response.text
+    assert "报告层未重新执行工程计算" in response.text
+    assert "输入数据" in response.text
+    assert "计算数据" in response.text
+    assert "依据" in response.text
+    assert "已通过检查" in response.text
+    assert "PASS" not in response.text
 
 
 @pytest.mark.anyio

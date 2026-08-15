@@ -10,6 +10,7 @@ from app.models.review import (
     ReviewProjectSnapshot,
     ReviewRun,
 )
+from app.presentation import localize_finding
 from app.rules import run_design_review
 from app.schemas.engineering import CalculationSnapshot
 from app.schemas.project import (
@@ -255,22 +256,24 @@ def _review_summary(review: ReviewRun) -> ReviewSummary:
 
 def review_to_response(review: ReviewRun) -> ProjectReviewResponse:
     stored_findings = tuple(
-        Finding.model_validate(
-            {
-                "rule_id": finding.rule_id,
-                "category": finding.category,
-                "severity": finding.severity,
-                "title": finding.title,
-                "description": finding.description,
-                "evidence": finding.evidence,
-                "calculated_values": finding.calculated_values,
-                "missing_information": finding.missing_information,
-                "recommended_action": finding.recommended_action,
-                "requires_engineer_confirmation": (
-                    finding.requires_engineer_confirmation
-                ),
-                "report_eligible": finding.report_eligible,
-            }
+        localize_finding(
+            Finding.model_validate(
+                {
+                    "rule_id": finding.rule_id,
+                    "category": finding.category,
+                    "severity": finding.severity,
+                    "title": finding.title,
+                    "description": finding.description,
+                    "evidence": finding.evidence,
+                    "calculated_values": finding.calculated_values,
+                    "missing_information": finding.missing_information,
+                    "recommended_action": finding.recommended_action,
+                    "requires_engineer_confirmation": (
+                        finding.requires_engineer_confirmation
+                    ),
+                    "report_eligible": finding.report_eligible,
+                }
+            )
         )
         for finding in review.findings
     )

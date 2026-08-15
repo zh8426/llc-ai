@@ -113,6 +113,11 @@ Rule ID 与 Formula Version 供追溯。用户界面使用中文产品术语，�
 
 HTML renderer 负责转义用户文本、组织章节、从持久化 Calculation Snapshot 展示完整六项计算与 Formula Version，并附加 Engineering Disclaimer。它不得从 Finding 拼装基础计算表、重新计算数值、修改 Severity 或恢复被 R020 隔离的 Finding。
 
+数据库中的 Review Finding 保留规则执行时的原始审计文本。`app/presentation/zh.py`
+只在 API response 与 HTML Report 的展示边界生成中文标题、说明、建议和依据说明；
+它不得改变 Severity、Evidence values、Missing Information、Rule ID、Formula Version
+或 `report_eligible`。因此产品语言本地化不会改写历史工程判定。
+
 Review History API 直接查询持久化的 Review Artifact：项目列表 endpoint 返回轻量
 Summary 和 Calculation Snapshot 摘要，Review ID endpoint 返回完整历史 Artifact，
 历史 Report endpoint 复用同一个只读 renderer。Project 后续修改不会改变旧 Review
