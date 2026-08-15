@@ -95,19 +95,20 @@ R001 只检查字段存在性，不替代单位、数值或物理合理性检查
 
 ### LLC-R005 — Resonant Frequency Calculation
 
-- 调用 Phase 1 `calculate_fr()`。
+- 读取 canonical Calculation Snapshot 中由 Phase 1 `calculate_fr()` 生成的结果；Rule 本身不重新计算。
 - 成功：`INFO`，保留 `LLC-FR-V1` 结果。
 - 输入缺失或无效：`INSUFFICIENT_DATA`
 
 ### LLC-R006 — Lower Resonant Frequency Calculation
 
-- 调用 Phase 1 `calculate_fp()`。
+- 读取 canonical Calculation Snapshot 中由 Phase 1 `calculate_fp()` 生成的结果；Rule 本身不重新计算。
 - 成功：`INFO`，保留 `LLC-FP-V1` 结果。
 - 输入缺失或无效：`INSUFFICIENT_DATA`
 
 ### LLC-R007 — Resonant Frequency Operating Range
 
 - Condition：`Fsw Min < fr < Fsw Max`
+- `fr` 来自 canonical Calculation Snapshot。
 - 满足：`PASS`
 - 不满足：`WARNING`
 - 输入缺失或无效：`INSUFFICIENT_DATA`
@@ -116,14 +117,14 @@ WARNING 不等于设计失败，只提示工程师复核谐振腔和预期工作
 
 ### LLC-R008 — Lm/Lr Ratio Observation
 
-- 调用 `calculate_lm_lr_ratio()`。
+- 读取 canonical Calculation Snapshot 中的 `calculate_lm_lr_ratio()` 结果。
 - 成功固定为 `INFO`。
 - 不设置 Lm/Lr 通用合格范围或 PASS/FAIL 阈值。
 - 输入缺失或无效：`INSUFFICIENT_DATA`
 
 ### LLC-R009 — Characteristic Impedance
 
-- 调用 `calculate_zr()`。
+- 读取 canonical Calculation Snapshot 中的 `calculate_zr()` 结果。
 - 成功固定为 `INFO`。
 - 输入缺失或无效：`INSUFFICIENT_DATA`
 
@@ -231,4 +232,4 @@ R019 只检查项目配置的字段存在性。具体单位和数值有效性由
 
 REST API 从已保存的结构化 Project 构建 `ReviewContext`，不得在 Route 中实现或改写 Rule。
 
-当 `iout` 未保存而 `pout`、`vout` 有效时，Application Service 可以调用已定义的 `LLC-IOUT-V1` 生成 R010 输入。其他缺失字段继续由对应 Rule 返回 `INSUFFICIENT_DATA`。
+Application Service 先通过统一 calculation service 生成 Calculation Snapshot，再将六项结果映射到 `ReviewContext.calculated_inputs`。当 `iout` 未保存而 `pout`、`vout` 有效时，R010 使用快照中的 `LLC-IOUT-V1`。R005–R009 同样读取快照，不在 Rule 内重复计算；其他缺失字段继续返回 `INSUFFICIENT_DATA`。

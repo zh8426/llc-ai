@@ -13,8 +13,18 @@ async def test_calculate_project_returns_all_six_traceable_results(
 
     assert response.status_code == 200
     body = response.json()
+    assert body["engine_version"] == "LLC-CALCULATION-ENGINE-V1"
+    assert body["calculated_at"]
     assert body["missing_information"] == []
     assert body["errors"] == {}
+    assert [result["name"] for result in body["calculations"]] == [
+        "resonant_frequency",
+        "lower_resonant_frequency",
+        "characteristic_impedance",
+        "inductance_ratio",
+        "output_current",
+        "input_power",
+    ]
     assert {result["formula_version"] for result in body["calculations"]} == {
         "LLC-FR-V1",
         "LLC-FP-V1",

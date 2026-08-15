@@ -103,17 +103,19 @@ Pin estimate
 ```json
 {
   "project_id": "...",
+  "calculated_at": "2026-08-15T00:00:00Z",
+  "engine_version": "LLC-CALCULATION-ENGINE-V1",
   "calculations": [],
   "missing_information": [],
   "errors": {}
 }
 ```
 
-每个成功结果保留输入快照、单位和 formula version。项目不完整时 endpoint 仍返回 `200`，并在 `missing_information` 列出缺失字段；公式输入无效时在 `errors` 中返回确定性错误，不生成伪结果。
+每个成功结果保留输入快照、单位和 formula version。该响应就是本次 canonical Calculation Snapshot。项目不完整时 endpoint 仍返回 `200`，并在 `missing_information` 列出缺失字段；公式输入无效时在 `errors` 中返回确定性错误，不生成伪结果。
 
 ## `POST /projects/{project_id}/review`
 
-从已保存的结构化 Project 构建 `ReviewContext`，运行 R001–R020，并持久化 Review Run 与每条 Finding。成功返回 `201`：
+从已保存的结构化 Project 运行一次 canonical calculation，使用该 Calculation Snapshot 构建 `ReviewContext`，运行 R001–R020，并持久化 Project Snapshot、Calculation Snapshot、Review Run 与每条 Finding。成功返回 `201`：
 
 ```json
 {
@@ -127,11 +129,19 @@ Pin estimate
     "critical": 0,
     "insufficient_data": 3
   },
-  "findings": []
+  "findings": [],
+  "calculation_snapshot": {
+    "project_id": "...",
+    "calculated_at": "2026-08-15T00:00:00Z",
+    "engine_version": "LLC-CALCULATION-ENGINE-V1",
+    "calculations": [],
+    "missing_information": [],
+    "errors": {}
+  }
 }
 ```
 
-如果 Project 未显式保存 `iout`，但 `pout` 和 `vout` 有效，Review Service 使用 `LLC-IOUT-V1` 确定性结果作为 R010 输入。不会补充其他缺失工程参数、器件额定值、测量值或项目裕量。
+如果 Project 未显式保存 `iout`，但 `pout` 和 `vout` 有效，R010 使用 Calculation Snapshot 中的 `LLC-IOUT-V1` 结果。不会补充其他缺失工程参数、器件额定值、测量值或项目裕量。
 
 正式 `findings` 只包含通过 R020 Evidence Gate 的结果。
 
@@ -143,13 +153,14 @@ Pin estimate
 
 将最近一次 Review 渲染为自包含、可打印的中文 HTML Design Review Report，成功返回 `200 text/html`。
 
-报告只消费 Review 时保存的不可变 Project Snapshot、Review Summary 和 structured Findings。Reporting Layer 不调用 Calculation Engine 或 Rule Engine，也不会把当前已修改的 Project 参数与旧 Review 混合。
+报告只消费 Review 时保存的不可变 Project Snapshot、Calculation Snapshot、Review Summary 和 structured Findings。Reporting Layer 不调用 Calculation Engine 或 Rule Engine，不从 Findings 反向拼装基础计算，也不会把当前已修改的 Project 参数与旧 Review 混合。
 
 返回规则：
 
 - Project 不存在：`404`
 - 尚未运行 Review：`404`
 - 旧 Review 不包含 Project Snapshot：`409`，需要重新运行 Review
+- 旧 Review 不包含 Calculation Snapshot：`409`，需要重新运行 Review
 
 报告包含 Project Specification、Calculation Results、Summary、Critical、Warning、Insufficient Data、Passed Checks、Information Findings、Evidence、Calculation Versions 和 Engineering Disclaimer。本阶段不生成 PDF。
 

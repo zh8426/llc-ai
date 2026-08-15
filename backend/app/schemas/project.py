@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.schemas.engineering import CalculationResult, EngineeringQuantity
+from app.schemas.engineering import CalculationSnapshot, EngineeringQuantity
 from app.schemas.review import (
     Finding,
     ReviewRequests,
@@ -140,13 +140,8 @@ class ProjectListResponse(BaseModel):
     projects: tuple[ProjectResponse, ...]
 
 
-class ProjectCalculationResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    project_id: str
-    calculations: tuple[CalculationResult, ...]
-    missing_information: tuple[str, ...] = ()
-    errors: dict[str, str] = Field(default_factory=dict)
+class ProjectCalculationResponse(CalculationSnapshot):
+    """API representation of the canonical Calculation Snapshot."""
 
 
 class ProjectReviewResponse(BaseModel):
@@ -157,3 +152,4 @@ class ProjectReviewResponse(BaseModel):
     created_at: datetime
     summary: ReviewSummary
     findings: tuple[Finding, ...]
+    calculation_snapshot: CalculationSnapshot | None = None

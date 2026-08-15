@@ -3,11 +3,15 @@ from datetime import UTC
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.engine import calculate_output_current
-from app.engine.exceptions import EngineeringCalculationError
 from app.models.project import Project
-from app.models.review import ReviewFinding, ReviewProjectSnapshot, ReviewRun
+from app.models.review import (
+    ReviewCalculationSnapshot,
+    ReviewFinding,
+    ReviewProjectSnapshot,
+    ReviewRun,
+)
 from app.rules import run_design_review
+from app.schemas.engineering import CalculationSnapshot
 from app.schemas.project import ProjectReviewResponse
 from app.schemas.review import (
     ControllerReviewInput,
@@ -21,6 +25,7 @@ from app.schemas.review import (
     ReviewSettings,
     ReviewSummary,
 )
+from app.services.calculations import calculate_project
 from app.services.projects import (
     CONTROLLER_QUANTITIES,
     PRIMARY_SWITCH_QUANTITIES,
@@ -31,19 +36,10 @@ from app.services.projects import (
 )
 
 
-def build_review_context(project: Project) -> ReviewContext:
-    iout = project_quantity(project, "iout")
-    calculated_inputs = {}
-    if iout is None:
-        pout = project_quantity(project, "pout")
-        vout = project_quantity(project, "vout")
-        if pout is not None and vout is not None:
-            try:
-                result = calculate_output_current(pout=pout, vout=vout)
-                calculated_inputs[ReviewParameterName.IOUT] = result
-            except EngineeringCalculationError:
-                pass
-
+def build_review_context(
+    project: Project,
+    calculation_snapshot: CalculationSnapshot,
+) -> ReviewContext:
     settings_parameters = project.gain_review_required_parameters
     return ReviewContext(
         project=LLCProjectReviewInput(
@@ -52,7 +48,7 @@ def build_review_context(project: Project) -> ReviewContext:
             vin_max=project_quantity(project, "vin_max"),
             vout=project_quantity(project, "vout"),
             pout=project_quantity(project, "pout"),
-            iout=iout,
+            iout=project_quantity(project, "iout"),
             lr=project_quantity(project, "lr"),
             lm=project_quantity(project, "lm"),
             cr=project_quantity(project, "cr"),
@@ -117,12 +113,15 @@ def build_review_context(project: Project) -> ReviewContext:
                 else None
             ),
         ),
-        calculated_inputs=calculated_inputs,
+        calculated_inputs={
+            result.name: result for result in calculation_snapshot.calculations
+        },
     )
 
 
 def run_and_store_review(session: Session, project: Project) -> ReviewRun:
-    result = run_design_review(build_review_context(project))
+    calculation_snapshot = calculate_project(project)
+    result = run_design_review(build_review_context(project, calculation_snapshot))
     review = ReviewRun(
         project_id=project.id,
         pass_count=result.summary.pass_count,
@@ -133,6 +132,17 @@ def run_and_store_review(session: Session, project: Project) -> ReviewRun:
     )
     review.project_snapshot = ReviewProjectSnapshot(
         project_data=project_to_response(project).model_dump(mode="json")
+    )
+    serialized_calculations = [
+        calculation.model_dump(mode="json")
+        for calculation in calculation_snapshot.calculations
+    ]
+    review.calculation_snapshot = ReviewCalculationSnapshot(
+        calculated_at=calculation_snapshot.calculated_at,
+        engine_version=calculation_snapshot.engine_version,
+        calculations=serialized_calculations,
+        missing_information=list(calculation_snapshot.missing_information),
+        errors=calculation_snapshot.errors,
     )
     for position, finding in enumerate(result.findings):
         serialized = finding.model_dump(mode="json")
@@ -166,6 +176,7 @@ def get_review(session: Session, review_id: str) -> ReviewRun:
         .options(
             selectinload(ReviewRun.findings),
             selectinload(ReviewRun.project_snapshot),
+            selectinload(ReviewRun.calculation_snapshot),
         )
     )
     review = session.scalar(statement)
@@ -183,6 +194,7 @@ def get_latest_review(session: Session, project_id: str) -> ReviewRun | None:
         .options(
             selectinload(ReviewRun.findings),
             selectinload(ReviewRun.project_snapshot),
+            selectinload(ReviewRun.calculation_snapshot),
         )
     )
     return session.scalar(statement)
@@ -227,4 +239,24 @@ def review_to_response(review: ReviewRun) -> ProjectReviewResponse:
             }
         ),
         findings=findings,
+        calculation_snapshot=(
+            CalculationSnapshot.model_validate(
+                {
+                    "project_id": review.project_id,
+                    "calculated_at": (
+                        review.calculation_snapshot.calculated_at.replace(tzinfo=UTC)
+                        if review.calculation_snapshot.calculated_at.tzinfo is None
+                        else review.calculation_snapshot.calculated_at.astimezone(UTC)
+                    ),
+                    "engine_version": review.calculation_snapshot.engine_version,
+                    "calculations": review.calculation_snapshot.calculations,
+                    "missing_information": (
+                        review.calculation_snapshot.missing_information
+                    ),
+                    "errors": review.calculation_snapshot.errors,
+                }
+            )
+            if review.calculation_snapshot is not None
+            else None
+        ),
     )

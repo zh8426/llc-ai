@@ -19,13 +19,28 @@ def update_section(
 
 
 def invalid_tank_and_voltage_order(context: ReviewContext) -> ReviewContext:
-    return update_section(
+    context = update_section(
         context,
         "project",
         lr=q(-45, "uH"),
         vin_min=q(420, "V"),
         vin_nom=q(360, "V"),
         vin_max=q(300, "V"),
+    )
+    invalidated_results = {
+        "resonant_frequency",
+        "lower_resonant_frequency",
+        "characteristic_impedance",
+        "inductance_ratio",
+    }
+    return context.model_copy(
+        update={
+            "calculated_inputs": {
+                name: result
+                for name, result in context.calculated_inputs.items()
+                if name not in invalidated_results
+            }
+        }
     )
 
 
@@ -208,4 +223,3 @@ def test_multi_fault_scenarios_remain_deterministic_and_evidence_backed(
     )
     assert result.excluded_findings == ()
     assert by_rule["LLC-R020"].severity == Severity.PASS
-

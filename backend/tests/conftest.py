@@ -7,6 +7,14 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import get_session
+from app.engine import (
+    calculate_fp,
+    calculate_fr,
+    calculate_input_power,
+    calculate_lm_lr_ratio,
+    calculate_output_current,
+    calculate_zr,
+)
 from app.main import app
 from app.models import Base
 from app.schemas.engineering import EngineeringQuantity
@@ -120,7 +128,7 @@ def api_project_payload() -> dict[str, object]:
 
 @pytest.fixture
 def normal_review_context() -> ReviewContext:
-    return ReviewContext(
+    context = ReviewContext(
         project=LLCProjectReviewInput(
             vin_min=q(300, "V"),
             vin_nom=q(360, "V"),
@@ -173,6 +181,20 @@ def normal_review_context() -> ReviewContext:
                 ReviewParameterName.TRANSFORMER_RATIO,
             ),
         ),
+    )
+    project = context.project
+    calculations = (
+        calculate_fr(lr=project.lr, cr=project.cr),
+        calculate_fp(lr=project.lr, lm=project.lm, cr=project.cr),
+        calculate_zr(lr=project.lr, cr=project.cr),
+        calculate_lm_lr_ratio(lr=project.lr, lm=project.lm),
+        calculate_output_current(pout=project.pout, vout=project.vout),
+        calculate_input_power(pout=project.pout, efficiency=q(0.94, "dimensionless")),
+    )
+    return context.model_copy(
+        update={
+            "calculated_inputs": {result.name: result for result in calculations}
+        }
     )
 
 

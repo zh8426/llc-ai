@@ -39,6 +39,11 @@ class ReviewRun(Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    calculation_snapshot: Mapped["ReviewCalculationSnapshot | None"] = relationship(
+        back_populates="review",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
 
 class ReviewFinding(Base):
@@ -77,3 +82,20 @@ class ReviewProjectSnapshot(Base):
     project_data: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
 
     review: Mapped[ReviewRun] = relationship(back_populates="project_snapshot")
+
+
+class ReviewCalculationSnapshot(Base):
+    __tablename__ = "review_calculation_snapshots"
+
+    review_id: Mapped[str] = mapped_column(
+        ForeignKey("review_runs.id", ondelete="CASCADE"), primary_key=True
+    )
+    calculated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    engine_version: Mapped[str] = mapped_column(String(100), nullable=False)
+    calculations: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False)
+    missing_information: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    errors: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False)
+
+    review: Mapped[ReviewRun] = relationship(back_populates="calculation_snapshot")

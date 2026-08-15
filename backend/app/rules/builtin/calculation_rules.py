@@ -1,6 +1,5 @@
 from collections.abc import Sequence
 
-from app.engine import calculate_fp, calculate_fr, calculate_lm_lr_ratio, calculate_zr
 from app.engine.exceptions import EngineeringCalculationError
 from app.engine.units import normalize_positive_quantity
 from app.rules.base import ReviewRule
@@ -14,7 +13,6 @@ from app.schemas.engineering import CalculationResult, EngineeringQuantity
 from app.schemas.review import (
     Finding,
     ReviewContext,
-    ReviewParameterName,
     Severity,
 )
 
@@ -46,16 +44,13 @@ class ResonantFrequencyCalculationRule(ReviewRule):
                 recommended_action=("Provide valid Lr and Cr values with units.",),
                 evidence=(input_evidence,),
             )
-        assert project.lr is not None
-        assert project.cr is not None
-        try:
-            result = calculate_fr(lr=project.lr, cr=project.cr)
-        except EngineeringCalculationError:
+        result = context.calculated_inputs.get("resonant_frequency")
+        if result is None:
             return insufficient_finding(
                 rule_id=self.rule_id,
                 category=self.category,
                 title=self.title,
-                description="Resonant frequency cannot be calculated from the supplied values.",
+                description="The canonical Calculation Snapshot has no valid resonant frequency result.",
                 missing_information=("valid_lr", "valid_cr"),
                 recommended_action=("Correct Lr and Cr values or units.",),
                 evidence=(input_evidence,),
@@ -97,17 +92,13 @@ class LowerResonantFrequencyCalculationRule(ReviewRule):
                 recommended_action=("Provide valid Lr, Lm, and Cr values with units.",),
                 evidence=(input_evidence,),
             )
-        assert project.lr is not None
-        assert project.lm is not None
-        assert project.cr is not None
-        try:
-            result = calculate_fp(lr=project.lr, lm=project.lm, cr=project.cr)
-        except EngineeringCalculationError:
+        result = context.calculated_inputs.get("lower_resonant_frequency")
+        if result is None:
             return insufficient_finding(
                 rule_id=self.rule_id,
                 category=self.category,
                 title=self.title,
-                description="Lower resonant frequency cannot be calculated from the supplied values.",
+                description="The canonical Calculation Snapshot has no valid lower resonant frequency result.",
                 missing_information=("valid_lr", "valid_lm", "valid_cr"),
                 recommended_action=("Correct Lr, Lm, and Cr values or units.",),
                 evidence=(input_evidence,),
@@ -154,12 +145,20 @@ class ResonantFrequencyOperatingRangeRule(ReviewRule):
                 recommended_action=("Provide Lr, Cr, Fsw Min, and Fsw Max.",),
                 evidence=(input_evidence,),
             )
-        assert project.lr is not None
-        assert project.cr is not None
         assert project.fsw_min is not None
         assert project.fsw_max is not None
+        fr = context.calculated_inputs.get("resonant_frequency")
+        if fr is None:
+            return insufficient_finding(
+                rule_id=self.rule_id,
+                category=self.category,
+                title=self.title,
+                description="The canonical Calculation Snapshot has no valid resonant frequency result.",
+                missing_information=("valid_lr", "valid_cr"),
+                recommended_action=("Correct the resonant tank inputs and rerun the review.",),
+                evidence=(input_evidence,),
+            )
         try:
-            fr = calculate_fr(lr=project.lr, cr=project.cr)
             fsw_min = normalize_positive_quantity(
                 name="fsw_min", quantity=project.fsw_min, target_unit="Hz"
             )
@@ -231,16 +230,13 @@ class InductanceRatioObservationRule(ReviewRule):
                 recommended_action=("Provide valid Lr and Lm values with units.",),
                 evidence=(input_evidence,),
             )
-        assert project.lr is not None
-        assert project.lm is not None
-        try:
-            result = calculate_lm_lr_ratio(lr=project.lr, lm=project.lm)
-        except EngineeringCalculationError:
+        result = context.calculated_inputs.get("inductance_ratio")
+        if result is None:
             return insufficient_finding(
                 rule_id=self.rule_id,
                 category=self.category,
                 title=self.title,
-                description="Lm/Lr cannot be calculated from the supplied values.",
+                description="The canonical Calculation Snapshot has no valid Lm/Lr result.",
                 missing_information=("valid_lr", "valid_lm"),
                 recommended_action=("Correct Lr and Lm values or units.",),
                 evidence=(input_evidence,),
@@ -289,16 +285,13 @@ class CharacteristicImpedanceRule(ReviewRule):
                 recommended_action=("Provide valid Lr and Cr values with units.",),
                 evidence=(input_evidence,),
             )
-        assert project.lr is not None
-        assert project.cr is not None
-        try:
-            result = calculate_zr(lr=project.lr, cr=project.cr)
-        except EngineeringCalculationError:
+        result = context.calculated_inputs.get("characteristic_impedance")
+        if result is None:
             return insufficient_finding(
                 rule_id=self.rule_id,
                 category=self.category,
                 title=self.title,
-                description="Characteristic impedance cannot be calculated from the supplied values.",
+                description="The canonical Calculation Snapshot has no valid characteristic impedance result.",
                 missing_information=("valid_lr", "valid_cr"),
                 recommended_action=("Correct Lr and Cr values or units.",),
                 evidence=(input_evidence,),
@@ -327,7 +320,7 @@ class OutputPowerConsistencyRule(ReviewRule):
         self, context: ReviewContext, prior_findings: Sequence[Finding] = ()
     ) -> Finding:
         project = context.project
-        iout_calculation = context.calculated_inputs.get(ReviewParameterName.IOUT)
+        iout_calculation = context.calculated_inputs.get("output_current")
         iout_quantity = project.iout
         evidence_items = [
             user_input_evidence(

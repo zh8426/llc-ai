@@ -1,3 +1,4 @@
+from datetime import datetime
 from math import isfinite
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -41,3 +42,15 @@ class CalculationResult(BaseModel):
     inputs: dict[str, EngineeringQuantity]
     formula_version: str = Field(min_length=1)
 
+
+class CalculationSnapshot(BaseModel):
+    """Immutable output of one canonical project calculation run."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    project_id: str = Field(min_length=1)
+    calculated_at: datetime
+    engine_version: str = Field(min_length=1)
+    calculations: tuple[CalculationResult, ...]
+    missing_information: tuple[str, ...] = ()
+    errors: dict[str, str] = Field(default_factory=dict)

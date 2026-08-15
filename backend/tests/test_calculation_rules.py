@@ -11,8 +11,8 @@ from app.rules.builtin import (
     ResonantFrequencyCalculationRule,
     ResonantFrequencyOperatingRangeRule,
 )
-from app.schemas.engineering import EngineeringQuantity
-from app.schemas.review import EvidenceSource, ReviewContext, ReviewParameterName, Severity
+from app.schemas.engineering import CalculationResult, EngineeringQuantity
+from app.schemas.review import EvidenceSource, ReviewContext, Severity
 
 
 def q(value: float, unit: str) -> EngineeringQuantity:
@@ -31,6 +31,30 @@ def test_r005_reports_versioned_resonant_frequency(
     assert finding.evidence
 
 
+def test_r005_consumes_the_supplied_snapshot_result(
+    normal_review_context: ReviewContext,
+) -> None:
+    snapshot_result = CalculationResult(
+        name="resonant_frequency",
+        value=123_456.0,
+        unit="Hz",
+        inputs={"lr": q(45, "uH"), "cr": q(47, "nF")},
+        formula_version="TEST-SNAPSHOT-FR-V1",
+    )
+    context = normal_review_context.model_copy(
+        update={
+            "calculated_inputs": {
+                **normal_review_context.calculated_inputs,
+                "resonant_frequency": snapshot_result,
+            }
+        }
+    )
+
+    finding = ResonantFrequencyCalculationRule().evaluate(context)
+
+    assert finding.calculated_values["fr"] == snapshot_result
+
+
 @pytest.mark.parametrize("field", ["lr", "cr"])
 def test_r005_handles_missing_and_invalid_inputs(
     normal_review_context: ReviewContext,
@@ -40,6 +64,15 @@ def test_r005_handles_missing_and_invalid_inputs(
     missing = update_review_context(normal_review_context, "project", **{field: None})
     invalid = update_review_context(
         normal_review_context, "project", **{field: q(-1, "H" if field == "lr" else "F")}
+    )
+    invalid = invalid.model_copy(
+        update={
+            "calculated_inputs": {
+                name: result
+                for name, result in invalid.calculated_inputs.items()
+                if name != "resonant_frequency"
+            }
+        }
     )
 
     assert ResonantFrequencyCalculationRule().evaluate(missing).severity == Severity.INSUFFICIENT_DATA
@@ -73,6 +106,15 @@ def test_r006_rejects_invalid_inductance_unit(
     update_review_context: Callable[..., ReviewContext],
 ) -> None:
     context = update_review_context(normal_review_context, "project", lm=q(300, "V"))
+    context = context.model_copy(
+        update={
+            "calculated_inputs": {
+                name: result
+                for name, result in context.calculated_inputs.items()
+                if name != "lower_resonant_frequency"
+            }
+        }
+    )
 
     assert LowerResonantFrequencyCalculationRule().evaluate(context).severity == Severity.INSUFFICIENT_DATA
 
@@ -131,6 +173,15 @@ def test_r008_handles_missing_and_invalid_inputs(
 ) -> None:
     missing = update_review_context(normal_review_context, "project", lm=None)
     invalid = update_review_context(normal_review_context, "project", lr=q(45, "V"))
+    invalid = invalid.model_copy(
+        update={
+            "calculated_inputs": {
+                name: result
+                for name, result in invalid.calculated_inputs.items()
+                if name != "inductance_ratio"
+            }
+        }
+    )
 
     assert InductanceRatioObservationRule().evaluate(missing).severity == Severity.INSUFFICIENT_DATA
     assert InductanceRatioObservationRule().evaluate(invalid).severity == Severity.INSUFFICIENT_DATA
@@ -151,6 +202,15 @@ def test_r009_handles_missing_and_invalid_inputs(
 ) -> None:
     missing = update_review_context(normal_review_context, "project", cr=None)
     invalid = update_review_context(normal_review_context, "project", cr=q(47, "H"))
+    invalid = invalid.model_copy(
+        update={
+            "calculated_inputs": {
+                name: result
+                for name, result in invalid.calculated_inputs.items()
+                if name != "characteristic_impedance"
+            }
+        }
+    )
 
     assert CharacteristicImpedanceRule().evaluate(missing).severity == Severity.INSUFFICIENT_DATA
     assert CharacteristicImpedanceRule().evaluate(invalid).severity == Severity.INSUFFICIENT_DATA
@@ -190,7 +250,7 @@ def test_r010_preserves_calculation_provenance_for_derived_iout(
     context = normal_review_context.model_copy(
         update={
             "project": project,
-            "calculated_inputs": {ReviewParameterName.IOUT: iout_result},
+            "calculated_inputs": {"output_current": iout_result},
         }
     )
 
@@ -208,7 +268,7 @@ def test_r010_preserves_calculation_provenance_for_derived_iout(
     )
 
 
-@pytest.mark.parametrize("field", ["pout", "vout", "iout"])
+@pytest.mark.parametrize("field", ["pout", "vout"])
 def test_r010_requires_all_power_consistency_inputs(
     normal_review_context: ReviewContext,
     update_review_context: Callable[..., ReviewContext],

@@ -1,6 +1,10 @@
 from html import escape
 
-from app.schemas.engineering import CalculationResult, EngineeringQuantity
+from app.schemas.engineering import (
+    CalculationResult,
+    CalculationSnapshot,
+    EngineeringQuantity,
+)
 from app.schemas.project import ProjectResponse, ProjectReviewResponse
 from app.schemas.review import EvidenceItem, Finding, Severity
 
@@ -56,42 +60,24 @@ def _specification_rows(project: ProjectResponse) -> str:
     )
 
 
-def _calculation_rows(review: ProjectReviewResponse) -> tuple[str, tuple[str, ...]]:
+def _calculation_rows(
+    calculation_snapshot: CalculationSnapshot,
+) -> tuple[str, tuple[str, ...]]:
     rows: list[str] = []
     versions: set[str] = set()
-    for finding in review.findings:
-        for key, value in finding.calculated_values.items():
-            if isinstance(value, CalculationResult):
-                versions.add(value.formula_version)
-                rows.append(
-                    "<tr>"
-                    f"<td>{_text(finding.rule_id)}</td>"
-                    f"<td>{_text(key)}</td>"
-                    f"<td>{_text(_number(value.value))}</td>"
-                    f"<td>{_text(value.unit)}</td>"
-                    f"<td><code>{_text(value.formula_version)}</code></td>"
-                    "</tr>"
-                )
-            else:
-                rows.append(
-                    "<tr>"
-                    f"<td>{_text(finding.rule_id)}</td>"
-                    f"<td>{_text(key)}</td>"
-                    f"<td>{_text(_number(value.value))}</td>"
-                    f"<td>{_text(value.unit)}</td>"
-                    "<td>—</td>"
-                    "</tr>"
-                )
-        for evidence in finding.evidence:
-            if evidence.source.value == "calculation":
-                versions.update(
-                    reference
-                    for reference in evidence.references
-                    if reference.startswith("LLC-")
-                )
+    for result in calculation_snapshot.calculations:
+        versions.add(result.formula_version)
+        rows.append(
+            "<tr>"
+            f"<td>{_text(result.name)}</td>"
+            f"<td>{_text(_number(result.value))}</td>"
+            f"<td>{_text(result.unit)}</td>"
+            f"<td><code>{_text(result.formula_version)}</code></td>"
+            "</tr>"
+        )
     if not rows:
         return (
-            '<tr><td colspan="5" class="empty-cell">本次 Review 没有可展示的结构化计算结果。</td></tr>',
+            '<tr><td colspan="4" class="empty-cell">本次 Review 没有可展示的结构化计算结果。</td></tr>',
             tuple(sorted(versions)),
         )
     return "".join(rows), tuple(sorted(versions))
@@ -198,10 +184,11 @@ def _finding_section(
 def render_design_review_report(
     project: ProjectResponse,
     review: ProjectReviewResponse,
+    calculation_snapshot: CalculationSnapshot,
 ) -> str:
     """Render a self-contained report without invoking calculations or rules."""
 
-    calculation_rows, versions = _calculation_rows(review)
+    calculation_rows, versions = _calculation_rows(calculation_snapshot)
     versions_markup = (
         "".join(f"<li><code>{_text(version)}</code></li>" for version in versions)
         if versions
@@ -286,7 +273,7 @@ def render_design_review_report(
   <section class="report-section">
     <h2>2. 结构化计算结果</h2>
     <table class="calculation-table">
-      <thead><tr><th>Rule</th><th>Result</th><th>Value</th><th>Unit</th><th>Formula Version</th></tr></thead>
+      <thead><tr><th>Result</th><th>Value</th><th>Unit</th><th>Formula Version</th></tr></thead>
       <tbody>{calculation_rows}</tbody>
     </table>
   </section>

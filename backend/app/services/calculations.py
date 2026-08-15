@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from datetime import UTC, datetime
 
 from app.engine import (
     calculate_fp,
@@ -15,6 +16,7 @@ from app.schemas.project import ProjectCalculationResponse
 from app.services.projects import project_quantity
 
 CalculationFunction = Callable[..., CalculationResult]
+CALCULATION_ENGINE_VERSION = "LLC-CALCULATION-ENGINE-V1"
 
 
 def calculate_project(project: Project) -> ProjectCalculationResponse:
@@ -71,6 +73,8 @@ def calculate_project(project: Project) -> ProjectCalculationResponse:
 
     return ProjectCalculationResponse(
         project_id=project.id,
+        calculated_at=datetime.now(UTC),
+        engine_version=CALCULATION_ENGINE_VERSION,
         calculations=tuple(calculations),
         missing_information=tuple(sorted(missing)),
         errors=errors,
