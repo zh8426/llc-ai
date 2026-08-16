@@ -1,0 +1,103 @@
+{
+  "schema_version": "EVAL-FAULT-DIAGNOSIS-V1",
+  "synthetic_fixture": true,
+  "disclaimer": "Software evaluation fixtures only; not an engineering reference design or safety conclusion.",
+  "cases": [
+    {
+      "case_id": "eval-zvs-current",
+      "symptom": "ZVS lost",
+      "observed_features": ["low resonant current at gate turn-on"],
+      "root_cause": "Insufficient resonant current at the tested operating point.",
+      "verification_steps": ["Measure IRES and complementary gate timing together."],
+      "fix": ["Review the switching frequency and resonant tank operating point."],
+      "engineer_verified": true
+    },
+    {
+      "case_id": "eval-zvs-dead-time",
+      "symptom": "ZVS lost",
+      "observed_features": ["complementary gate overlap"],
+      "root_cause": "Gate dead-time evidence is inconsistent with the recorded switching interval.",
+      "verification_steps": ["Measure both gate edges with the same time reference."],
+      "fix": ["Review the configured dead-time against the captured gate waveforms."],
+      "engineer_verified": true
+    },
+    {
+      "case_id": "eval-zvs-vds",
+      "symptom": "ZVS lost",
+      "observed_features": ["VDS remains high at gate turn-on"],
+      "root_cause": "VDS remains elevated at the observed gate turn-on event.",
+      "verification_steps": ["Repeat the measurement with probe polarity and scaling documented."],
+      "fix": ["Review the turn-on waveform and acquisition setup with an engineer."],
+      "engineer_verified": true
+    },
+    {
+      "case_id": "eval-heat-current",
+      "symptom": "MOSFET overheating",
+      "observed_features": ["high primary current during the loaded interval"],
+      "root_cause": "Primary switch current stress is elevated in the recorded operating condition.",
+      "verification_steps": ["Repeat current and temperature measurements at the stated load."],
+      "fix": ["Review current stress, thermal path, and test condition together."],
+      "engineer_verified": true
+    },
+    {
+      "case_id": "eval-heat-rds",
+      "symptom": "MOSFET overheating",
+      "observed_features": ["elevated Rds(on) at temperature"],
+      "root_cause": "Conduction loss may be associated with the recorded temperature-dependent Rds(on).",
+      "verification_steps": ["Record junction or case temperature and the Rds(on) test condition."],
+      "fix": ["Review datasheet test conditions and thermal measurements."],
+      "engineer_verified": true
+    },
+    {
+      "case_id": "eval-heat-cooling",
+      "symptom": "MOSFET overheating",
+      "observed_features": ["heatsink airflow is insufficient"],
+      "root_cause": "The recorded thermal condition is inconsistent with the intended cooling setup.",
+      "verification_steps": ["Verify airflow, heatsink mounting, and temperature sensor placement."],
+      "fix": ["Correct the cooling test condition before comparing electrical stress."],
+      "engineer_verified": true
+    }
+  ],
+  "scenarios": [
+    {
+      "scenario_id": "FD-EVAL-001",
+      "symptom": "ZVS lost",
+      "observed_features": ["low resonant current"],
+      "waveform_features": ["IRES at gate turn-on is low"],
+      "expected_case_ids": ["eval-zvs-current"],
+      "expected_evidence_tokens": ["low", "resonant", "current"]
+    },
+    {
+      "scenario_id": "FD-EVAL-002",
+      "symptom": "ZVS lost",
+      "observed_features": ["complementary gate overlap"],
+      "waveform_features": ["gate edges overlap"],
+      "expected_case_ids": ["eval-zvs-dead-time"],
+      "expected_evidence_tokens": ["complementary", "gate", "overlap"]
+    },
+    {
+      "scenario_id": "FD-EVAL-003",
+      "symptom": "ZVS lost",
+      "observed_features": ["VDS remains high at gate turn-on"],
+      "waveform_features": ["VDS at turn-on is high"],
+      "expected_case_ids": ["eval-zvs-vds"],
+      "expected_evidence_tokens": ["vds", "high", "turn"]
+    },
+    {
+      "scenario_id": "FD-EVAL-004",
+      "symptom": "MOSFET overheating",
+      "observed_features": ["high primary current"],
+      "waveform_features": ["current peak during loaded interval"],
+      "expected_case_ids": ["eval-heat-current"],
+      "expected_evidence_tokens": ["high", "primary", "current"]
+    },
+    {
+      "scenario_id": "FD-EVAL-005",
+      "symptom": "MOSFET overheating",
+      "observed_features": ["elevated Rds(on) at temperature"],
+      "waveform_features": ["temperature-dependent Rds(on)"],
+      "expected_case_ids": ["eval-heat-rds"],
+      "expected_evidence_tokens": ["elevated", "rds", "temperature"]
+    }
+  ]
+}
