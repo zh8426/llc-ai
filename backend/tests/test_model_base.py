@@ -3,9 +3,11 @@ from sqlalchemy import MetaData
 from app.models import Base
 
 
-def test_sqlalchemy_metadata_contains_phase_3_persistence_models() -> None:
+def test_sqlalchemy_metadata_contains_persistence_models() -> None:
     assert isinstance(Base.metadata, MetaData)
     assert set(Base.metadata.tables) == {
+        "datasheet_documents",
+        "datasheet_parameters",
         "projects",
         "review_calculation_snapshots",
         "review_runs",

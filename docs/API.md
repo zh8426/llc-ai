@@ -1,6 +1,6 @@
 # REST API
 
-Phase 3 提供 Project 持久化、六项确定性计算和 R001–R020 Design Review API。默认地址为 `http://127.0.0.1:8000`，交互文档位于 `/docs`。
+Phase 3–7 提供 Project 持久化、六项确定性计算、R001–R020 Design Review、ZVS 波形分析和 MOSFET Datasheet MVP API。默认地址为 `http://127.0.0.1:8000`，交互文档位于 `/docs`。
 
 所有 Engineering Quantity 都使用显式结构：
 
@@ -49,6 +49,10 @@ API 在持久化边界校验物理维度并转换为 SI。负数等维度正确�
 | `INVALID_REQUEST` | 422 | 请求参数校验失败 |
 | `DATABASE_CONFLICT` | 409 | 持久化数据无法满足当前操作 |
 | `INTERNAL_ERROR` | 500 | 未预期的服务器错误 |
+| `DATASHEET_TOO_LARGE` | 413 | 数据手册文件超过大小限制 |
+| `DATASHEET_PDF_INVALID` | 422 | PDF 无法提取可验证文本 |
+| `DATASHEET_NOT_FOUND` | 404 | 数据手册不存在 |
+| `DATASHEET_PARAMETER_NOT_FOUND` | 404 | 数据手册参数不存在 |
 
 客户端不应依赖中文 `message` 或 `details` 的具体文本来判断错误类型；后续新增错误码时保持现有字段结构不变。
 
@@ -242,6 +246,67 @@ Review 不存在时返回 `404`；旧 Review 缺少必要 Snapshot 时返回 `40
 
 报告包含 Project Specification、Calculation Results、Summary、Critical、Warning、Insufficient Data、Passed Checks、Information Findings、Evidence、Calculation Versions 和 Engineering Disclaimer。本阶段不生成 PDF。
 
+## Datasheet API（Phase 7，MOSFET MVP）
+
+Phase 7 只接收 MOSFET PDF 数据手册，执行保守的文本提取并保存候选参数。当前不做 OCR，扫描版 PDF 会返回结构化 `DATASHEET_PDF_INVALID` 错误。
+
+### `POST /datasheets`
+
+使用 `multipart/form-data` 上传 PDF：
+
+```text
+file: MOSFET PDF 数据手册
+manufacturer: 可选，人工提供的制造商
+part_number: 可选，人工提供的器件型号
+```
+
+当前候选参数包括：
+
+```text
+VDS, ID, Rds(on), Qg, Coss, Eoss, RthJC, Tj Max, Package
+```
+
+每个候选参数均保留：
+
+```text
+value
+unit
+value_type
+test_condition
+source_page
+confidence
+human_verified
+```
+
+数值参数会在提取边界转换为明确的标准单位；`test_condition.source_line` 保留原始文本行用于追溯。正则提取的 `confidence` 只是解析器质量提示，不是工程安全裕量，也不会自动升级为安全结论。
+
+成功返回 `201`。新文档的 `parser_status` 为 `NEEDS_HUMAN_REVIEW`；没有识别到支持参数时为 `NO_SUPPORTED_PARAMETERS`。
+
+### `GET /datasheets` 与 `GET /datasheets/{datasheet_id}`
+
+返回已保存的文档、解析状态和参数候选。数据手册参数不会自动写入 Project，也不会自动参与 R011–R013 或其他 CRITICAL 规则。
+
+### `PATCH /datasheets/{datasheet_id}/parameters/{parameter_id}`
+
+用于修正候选值或完成人工确认。例如：
+
+```json
+{
+  "human_verified": true
+}
+```
+
+只有所有已提取参数均 `human_verified=true` 时，文档状态才变为 `VERIFIED`。人工确认仍然是工程师责任，不代表系统完成安全认证。
+
+数据手册文件大小上限为 `10 MiB`。错误使用统一结构化响应，主要错误码包括：
+
+```text
+DATASHEET_TOO_LARGE
+DATASHEET_PDF_INVALID
+DATASHEET_NOT_FOUND
+DATASHEET_PARAMETER_NOT_FOUND
+```
+
 ## Development CORS
 
 允许的前端 Origin 由 `CORS_ORIGINS` 配置，默认：
@@ -300,5 +365,5 @@ CSV，不调用 LLM，不输出安全认证或量产结论。CSV、单位、阈�
 
 波形上传有明确资源边界：单个 CSV 最大 `25 MiB`，最多 `1,000,000` 个原始采样行，最多
 `8` 个波形通道（不含 `time` 列）。超过文件大小时返回 HTTP `413`，错误标识为
-`WAVEFORM_FILE_TOO_LARGE`；超过样本或通道上限时返回 `422`，错误信息包含
+`WAVEFORM_TOO_LARGE`；超过样本或通道上限时返回 `422`，错误码仍为
 `WAVEFORM_TOO_LARGE`。服务端使用有上限的读取，不会为了检查文件大小而将无限输入读入内存。

@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.database import create_database_engine
 from app.models import (
     Base,
+    DatasheetDocument,
+    DatasheetParameter,
     Project,
     ReviewCalculationSnapshot,
     ReviewFinding,
@@ -92,6 +94,49 @@ def test_sqlite_project_delete_cascades_review_tree() -> None:
                 ReviewCalculationSnapshot,
             ):
                 assert session.scalar(select(func.count()).select_from(model)) == 0
+    finally:
+        Base.metadata.drop_all(engine)
+        engine.dispose()
+
+
+def test_sqlite_datasheet_delete_cascades_parameters() -> None:
+    engine = create_database_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    document_id = "datasheet-cascade-test"
+
+    try:
+        with Session(engine) as session:
+            session.add(
+                DatasheetDocument(
+                    id=document_id,
+                    filename="cascade.pdf",
+                    content_type="application/pdf",
+                    parser_status="NEEDS_HUMAN_REVIEW",
+                    page_count=1,
+                )
+            )
+            session.flush()
+            session.add(
+                DatasheetParameter(
+                    id="parameter-cascade-test",
+                    document_id=document_id,
+                    position=0,
+                    parameter_name="VDS",
+                    value_numeric=650,
+                    unit="V",
+                    value_type="maximum",
+                    test_condition={"source_line": "VDS 650 V maximum"},
+                    source_page=1,
+                    confidence=0.8,
+                    human_verified=False,
+                )
+            )
+            session.commit()
+
+            session.execute(delete(DatasheetDocument).where(DatasheetDocument.id == document_id))
+            session.commit()
+
+            assert session.scalar(select(func.count()).select_from(DatasheetParameter)) == 0
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()

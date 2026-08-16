@@ -198,3 +198,29 @@ export type ZVSAnalysis = {
   gate_turn_on_timestamps: number[]
   gate_turn_off_timestamps: number[]
 }
+
+export type DatasheetParameter = {
+  id: string
+  parameter_name: 'VDS' | 'ID' | 'Rds(on)' | 'Qg' | 'Coss' | 'Eoss' | 'RthJC' | 'Tj Max' | 'Package'
+  value: number | string
+  unit: string
+  value_type: 'minimum' | 'typical' | 'maximum' | 'unknown'
+  test_condition: Record<string, string>
+  source_page: number | null
+  confidence: number
+  human_verified: boolean
+}
+
+export type Datasheet = {
+  id: string
+  filename: string
+  content_type: string
+  manufacturer: string | null
+  part_number: string | null
+  parser_status: 'NEEDS_HUMAN_REVIEW' | 'VERIFIED' | 'NO_SUPPORTED_PARAMETERS'
+  parser_message: string | null
+  page_count: number
+  created_at: string
+  updated_at: string
+  parameters: DatasheetParameter[]
+}

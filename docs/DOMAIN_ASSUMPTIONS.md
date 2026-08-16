@@ -64,7 +64,9 @@ Phase 2 引入以下项目级规则定义，不引入通用数值裕量：
 - Review Evidence 中的 `MeasurementEvidence.source_type=user_input` 与
   `human_verified=false` 是当前手工输入的 provenance 标记，不会把该数据升级为
   verified waveform evidence。
-- Datasheet Parser 和 Waveform Engine 尚未实现，不得将用户输入升级描述为 verified datasheet 或 waveform evidence。
+- Phase 7 Datasheet Parser 的候选值来自 PDF 文本正则提取，必须保留来源页、原始文本行、
+  解析器 confidence 和 `human_verified` 状态；未人工确认的数据不得升级描述为 verified
+  datasheet evidence，也不得自动进入 CRITICAL 规则。
 - R012 margin 可以为负值，用于表示 measured peak 已超过 rating；Phase 1 核心公式结果仍要求为有限正值。
 - 所有 `CRITICAL` 器件应力结果要求 Engineer Confirmation。
 - 任一 PASS 都是单条有限规则的结果，不构成安全、合规或量产结论。
@@ -122,3 +124,16 @@ Phase 2 引入以下项目级规则定义，不引入通用数值裕量：
 - 每个 ZVS 结果必须带有逐周期 VDS、IRES 和 gate turn-on 时间证据，并明确声明
   这是波形特征分类，不是安全认证或量产批准，且需要合格工程师复核原始探头、缩放、
   极性和测试条件。
+
+## Phase 7 Datasheet Processing Definitions
+
+- Phase 7 MVP 只支持 MOSFET PDF 文本提取；扫描版 PDF、图片表格和无法提取文本的文档
+  返回明确的解析限制，不自动执行 OCR。
+- 支持字段固定为 `VDS`、`ID`、`Rds(on)`、`Qg`、`Coss`、`Eoss`、`RthJC`、`Tj Max`
+  和 `Package`。未在文本中明确标注的字段保持缺失，不使用文件名或模型知识补全。
+- 数值字段在提取边界归一化为标准单位：V、A、ohm、coulomb、farad、joule、K/W 和
+  degC；原始单位和文本行通过 `test_condition.source_line` 保留用于追溯。
+- `confidence` 是解析器对标签与单位匹配质量的提示，不是概率、不代表器件可靠性，
+  也不是工程裕量。当前正则标签匹配候选为 `0.8`，文本 Package 候选为 `0.6`。
+- `human_verified` 默认必须为 `false`。只有工程师通过确认 API 后才可标记为 `true`；
+  当前 Phase 7 不会将任何 Datasheet 值自动映射到 Project 或 Rule Engine。

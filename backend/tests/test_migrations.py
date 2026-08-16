@@ -12,8 +12,10 @@ from app.models.project import Project
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 BASELINE_REVISION = "0001_phase0_4_baseline"
-HEAD_REVISION = "0002_calculation_snapshot"
+HEAD_REVISION = "0003_datasheet_infrastructure"
 APPLICATION_TABLES = {
+    "datasheet_documents",
+    "datasheet_parameters",
     "projects",
     "review_calculation_snapshots",
     "review_runs",

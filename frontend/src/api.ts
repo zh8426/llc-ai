@@ -2,6 +2,7 @@ import type {
   Project,
   ProjectPayload,
   Review,
+  Datasheet,
   WaveformAnalysisRequest,
   ZVSAnalysis,
 } from './types'
@@ -28,6 +29,10 @@ const errorCodeMessages: Record<string, string> = {
   RESOURCE_NOT_FOUND: '请求的资源不存在。',
   METHOD_NOT_ALLOWED: '请求方法不被允许。',
   INTERNAL_ERROR: '后端服务发生错误，请稍后重试。',
+  DATASHEET_TOO_LARGE: '数据手册 PDF 超过大小限制。',
+  DATASHEET_PDF_INVALID: 'PDF 无法提取可验证的文本。',
+  DATASHEET_NOT_FOUND: '数据手册不存在。',
+  DATASHEET_PARAMETER_NOT_FOUND: '数据手册参数不存在。',
 }
 
 const fallbackErrorCodes: Record<number, string> = {
@@ -173,4 +178,31 @@ export function analyzeZVS(input: WaveformAnalysisRequest): Promise<ZVSAnalysis>
     body.append('gate_high_threshold', String(input.gateHighThreshold))
   }
   return requestMultipart<ZVSAnalysis>('/waveforms/zvs', body)
+}
+
+export async function listDatasheets(): Promise<Datasheet[]> {
+  const result = await request<{ datasheets: Datasheet[] }>('/datasheets')
+  return result.datasheets
+}
+
+export function uploadDatasheet(
+  file: File,
+  manufacturer: string,
+  partNumber: string,
+): Promise<Datasheet> {
+  const body = new FormData()
+  body.append('file', file)
+  if (manufacturer.trim() !== '') body.append('manufacturer', manufacturer.trim())
+  if (partNumber.trim() !== '') body.append('part_number', partNumber.trim())
+  return requestMultipart<Datasheet>('/datasheets', body)
+}
+
+export function verifyDatasheetParameter(
+  documentId: string,
+  parameterId: string,
+): Promise<Datasheet> {
+  return request<Datasheet>(`/datasheets/${documentId}/parameters/${parameterId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ human_verified: true }),
+  })
 }

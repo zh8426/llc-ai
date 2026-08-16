@@ -314,6 +314,11 @@ h2 {
   background: #f9fbfa;
 }
 
+.button-small {
+  padding: 7px 10px;
+  font-size: 0.74rem;
+}
+
 .form-section {
   padding-top: 28px;
 }
@@ -676,6 +681,100 @@ h2 {
   line-height: 1.7;
 }
 
+.datasheet-panel {
+  max-width: 1180px;
+  margin: 0 auto 26px;
+  padding: clamp(22px, 3vw, 36px);
+  border: 1px solid #dce3df;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 16px 44px rgb(31 60 50 / 6%);
+}
+
+.datasheet-note {
+  margin: 16px 0 24px;
+  line-height: 1.7;
+}
+
+.datasheet-upload {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(150px, 1fr)) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.datasheet-upload .button-primary {
+  min-height: 43px;
+}
+
+.inline-notice {
+  margin: 13px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #2b6e55;
+  background: #eef8f2;
+}
+
+.datasheet-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.datasheet-card {
+  padding: 18px;
+  border: 1px solid #e0e9e4;
+  border-radius: 14px;
+  background: #fbfdfc;
+}
+
+.datasheet-card-heading {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.datasheet-card h3 {
+  margin-bottom: 4px;
+  color: #22463a;
+  font-size: 1rem;
+}
+
+.datasheet-card-heading p {
+  margin-bottom: 0;
+  color: #71817c;
+  font-size: 0.77rem;
+}
+
+.datasheet-table-wrap {
+  overflow-x: auto;
+}
+
+.datasheet-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.76rem;
+}
+
+.datasheet-table-wrap th,
+.datasheet-table-wrap td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #e5ece8;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.datasheet-table-wrap th {
+  color: #6c7d76;
+  font-size: 0.66rem;
+}
+
+.datasheet-table-wrap td {
+  color: #2d4e42;
+}
+
 .phase-badge {
   padding: 7px 10px;
   border: 1px solid #d8e8e0;
@@ -1001,11 +1100,16 @@ h2 {
   }
 
   .waveform-controls,
-  .waveform-summary-grid {
+  .waveform-summary-grid,
+  .datasheet-upload {
     grid-template-columns: repeat(2, minmax(140px, 1fr));
   }
 
   .waveform-controls .field-wide {
+    grid-column: span 2;
+  }
+
+  .datasheet-upload .field-wide {
     grid-column: span 2;
   }
 }
@@ -1044,11 +1148,16 @@ h2 {
   }
 
   .waveform-controls,
-  .waveform-summary-grid {
+  .waveform-summary-grid,
+  .datasheet-upload {
     grid-template-columns: 1fr;
   }
 
   .waveform-controls .field-wide {
+    grid-column: auto;
+  }
+
+  .datasheet-upload .field-wide {
     grid-column: auto;
   }
 

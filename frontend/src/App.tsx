@@ -1,3 +1,4 @@
+import DatasheetPanel from './components/DatasheetPanel'
 import ProjectEditor from './components/ProjectEditor'
 import ProjectSidebar from './components/ProjectSidebar'
 import ReviewPanel from './components/ReviewPanel'
@@ -64,6 +65,7 @@ function App() {
         )}
 
         <WaveformPanel />
+        <DatasheetPanel />
       </div>
     </main>
   )

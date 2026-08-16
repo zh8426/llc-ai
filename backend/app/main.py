@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.api.datasheets import router as datasheets_router
 from app.api.errors import APIError, api_error_response
 from app.api.health import router as health_router
 from app.api.projects import router as projects_router
@@ -101,3 +102,4 @@ app.include_router(review_history_router)
 app.include_router(reports_router)
 app.include_router(historical_reports_router)
 app.include_router(waveforms_router)
+app.include_router(datasheets_router)

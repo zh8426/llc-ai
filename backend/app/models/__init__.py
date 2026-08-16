@@ -1,8 +1,7 @@
-"""SQLAlchemy model foundations."""
+"""SQLAlchemy models."""
 
 from app.models.base import Base
-
-__all__ = ["Base"]
+from app.models.datasheet import DatasheetDocument, DatasheetParameter
 from app.models.project import Project
 from app.models.review import (
     ReviewCalculationSnapshot,
@@ -13,6 +12,8 @@ from app.models.review import (
 
 __all__ = [
     "Base",
+    "DatasheetDocument",
+    "DatasheetParameter",
     "Project",
     "ReviewCalculationSnapshot",
     "ReviewFinding",

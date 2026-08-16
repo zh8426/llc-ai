@@ -110,6 +110,7 @@ Backend：
 - Alembic
 - Pint
 - NumPy
+- pypdf（Phase 7 PDF 文本提取）
 - python-multipart
 - pytest / pytest-cov
 - Ruff

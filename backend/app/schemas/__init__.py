@@ -1,5 +1,14 @@
 """Pydantic request and response schemas."""
 
+from app.schemas.datasheet import (
+    DatasheetDocumentResponse,
+    DatasheetListResponse,
+    DatasheetParameterName,
+    DatasheetParameterResponse,
+    DatasheetParameterUpdate,
+    DatasheetParserStatus,
+    DatasheetValueType,
+)
 from app.schemas.engineering import CalculationResult, EngineeringQuantity
 from app.schemas.errors import APIErrorResponse, ErrorCode
 from app.schemas.evidence import (
@@ -34,6 +43,13 @@ from app.schemas.review import (
 __all__ = [
     "CalculationResult",
     "EngineeringQuantity",
+    "DatasheetDocumentResponse",
+    "DatasheetListResponse",
+    "DatasheetParameterName",
+    "DatasheetParameterResponse",
+    "DatasheetParameterUpdate",
+    "DatasheetParserStatus",
+    "DatasheetValueType",
     "APIErrorResponse",
     "ErrorCode",
     "EvidenceItem",

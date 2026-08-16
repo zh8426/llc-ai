@@ -1,6 +1,6 @@
 # Architecture
 
-## 当前范围：Phase 6
+## 当前范围：Phase 7
 
 Phase 3 形成第一个 Project Design Review Web Workflow：
 
@@ -180,7 +180,29 @@ Summary 和 Calculation Snapshot 摘要，Review ID endpoint 返回完整历史 
 历史 Report endpoint 复用同一个只读 renderer。Project 后续修改不会改变旧 Review
 或旧 Report。
 
+## Datasheet Boundary（Phase 7）
+
+Phase 7 新增独立的 MOSFET Datasheet ingestion boundary：
+
+```text
+PDF upload
+  → bounded text extraction (pypdf)
+  → explicit MOSFET label matching
+  → unit normalization and source-page capture
+  → candidate parameter persistence
+  → human verification API
+```
+
+`backend/app/datasheet/parser.py` 只做可追溯的文本候选提取，不做 OCR、不猜测缺失
+参数、不把 Typical 当作 Maximum，也不生成安全结论。候选值保留标准单位、原始文本行、
+页码、解析器 confidence 和 `human_verified` 状态。Datasheet 表只保存抽取结果；当前
+不会自动修改 Project 的器件字段，也不会绕过 Review Context 接入 R011–R013。
+
+只有人工确认状态会被持久化为 `human_verified=true`；这仍不等同于工程师批准设计或
+完成器件安全认证。扫描版 PDF、无法提取文本的 PDF 和未识别的参数都必须明确显示为
+解析限制，而不是由系统补全。
+
 ## Phase Boundary
 
-Phase 6 不包含：波形持久化、PDF Report、Datasheet/BOM Parser、Fault Diagnosis、
+Phase 7 不包含：OCR、BOM Parser、自动 Datasheet-to-Project mapping、Fault Diagnosis、
 LLM/RAG/AI Chat、Authentication、Payment 或 Cloud Deployment。
