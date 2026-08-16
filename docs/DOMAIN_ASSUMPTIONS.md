@@ -176,3 +176,19 @@ Phase 2 引入以下项目级规则定义，不引入通用数值裕量：
   使用关键词或语言模型自行判断一段文本是否与候选根因矛盾。
 - Phase 9 不持久化诊断结果，不调用 LLM/RAG，不实现自动 Evidence Ranking 以外的
   物理模型推理，也不修改 Project、Review、Waveform 或 FaultCase 数据。
+
+## Phase 10 LLM Orchestration Definitions
+
+- LLM 只作为 Engineering Orchestrator；所有可由现有 Python 模块确定性完成的计算、
+  单位转换、Waveform 分析、Review 规则和 FaultCase 检索必须通过 allow-listed tool
+  执行，不能由模型自行计算或猜测。
+- Provider 默认关闭。只有 `LLM_ENABLED=true` 且 `OPENAI_API_KEY` 存在时才允许发起
+  外部请求；API Key 只从运行环境读取，不写入仓库或数据库。
+- LLM 输出采用结构化 Schema：每条 Claim 必须引用同一响应中的 Evidence ID；没有
+  Evidence 的 Claim、未知 Evidence 引用、未带单位的工程数字和未要求工程师确认的
+  安全/认证/量产措辞都会被拒绝。
+- `OPENAI_MAX_TOOL_ROUNDS` 是调用次数上限（当前允许 1–8），用于限制 Provider 循环；
+  它不是工程阈值或安全裕量。
+- 工具结果与最终模型消息均保留在响应的结构化 `tool_calls` 和 `evidence` 字段中；
+  Phase 10 不把 LLM 文本持久化为工程事实，也不自动修改 Project、Review、Waveform、
+  Datasheet 或 FaultCase。

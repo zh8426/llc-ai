@@ -1,6 +1,6 @@
 # Architecture
 
-## 当前范围：Phase 9
+## 当前范围：Phase 10
 
 Phase 3 形成第一个 Project Design Review Web Workflow：
 
@@ -247,5 +247,26 @@ Project ID + symptom + observed / waveform features
 
 ## Phase Boundary
 
-Phase 9 不包含：OCR、BOM Parser、自动 Datasheet-to-Project mapping、LLM/RAG/AI Chat、
+Phase 10 不包含：RAG、AI Chat、OCR、BOM Parser、自动 Datasheet-to-Project mapping、
 自动安全结论、自动控制器调整、Authentication、Payment 或 Cloud Deployment。
+
+## LLM Boundary（Phase 10）
+
+Phase 10 新增显式 Provider Boundary：
+
+```text
+User Message + optional Project Scope
+  → LLM Provider (Responses API, disabled by default)
+  → allow-listed deterministic tool registry
+  → structured JSON output
+  → evidence / unit / safety guardrails
+  → engineering explanation with missing information
+```
+
+Provider 只能调用注册的只读工具。`ToolRegistry` 对工具参数做 Pydantic 校验，对项目
+范围做隔离，并将确定性工具结果以 JSON 返回。最终输出要求每条 Claim 引用已返回的
+Evidence；工程数字必须显式带单位；涉及安全、认证或量产的措辞必须要求 Engineer
+Confirmation。LLM 失败、未配置或输出不合规时返回结构化错误，不生成替代答案。
+
+LLM 不保存 API Key，默认 `LLM_ENABLED=false`；真实 Provider 使用环境变量配置，
+测试使用 Fake Provider。工具调用和最终消息分别记录在响应中，便于后续 Evaluation。

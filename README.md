@@ -111,6 +111,7 @@ Backend：
 - Pint
 - NumPy
 - pypdf（Phase 7 PDF 文本提取）
+- OpenAI Python SDK（Phase 10，可选 Provider）
 - python-multipart
 - pytest / pytest-cov
 - Ruff

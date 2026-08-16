@@ -1,6 +1,6 @@
 # REST API
 
-Phase 3–9 提供 Project 持久化、六项确定性计算、R001–R020 Design Review、ZVS 波形分析、MOSFET Datasheet MVP、Verified FaultCase 和确定性 Fault Diagnosis API。默认地址为 `http://127.0.0.1:8000`，交互文档位于 `/docs`。
+Phase 3–10 提供 Project 持久化、六项确定性计算、R001–R020 Design Review、ZVS 波形分析、MOSFET Datasheet MVP、Verified FaultCase、确定性 Fault Diagnosis 和受约束的 LLM Engineering Orchestration API。默认地址为 `http://127.0.0.1:8000`，交互文档位于 `/docs`。
 
 所有 Engineering Quantity 都使用显式结构：
 
@@ -54,6 +54,9 @@ API 在持久化边界校验物理维度并转换为 SI。负数等维度正确�
 | `DATASHEET_NOT_FOUND` | 404 | 数据手册不存在 |
 | `DATASHEET_PARAMETER_NOT_FOUND` | 404 | 数据手册参数不存在 |
 | `FAULT_CASE_NOT_FOUND` | 404 | 故障案例不存在 |
+| `LLM_NOT_CONFIGURED` | 503 | LLM Provider 未显式启用或缺少 API Key |
+| `LLM_PROVIDER_ERROR` | 502 | LLM Provider 未返回有效结果 |
+| `LLM_OUTPUT_INVALID` | 422 | LLM 输出未通过结构化证据/单位/安全校验 |
 
 客户端不应依赖中文 `message` 或 `details` 的具体文本来判断错误类型；后续新增错误码时保持现有字段结构不变。
 
@@ -356,6 +359,56 @@ http://localhost:5173
 ```
 
 本阶段没有 Authentication、Cloud Deployment 或公开网络安全配置。
+
+## LLM Orchestration API（Phase 10）
+
+Phase 10 的 LLM 只是编排与解释层。LLM 必须通过工具读取项目、调用确定性计算、
+运行 Review、读取 Datasheet/Waveform/FaultCase 和生成报告；它不能替代公式、单位
+校验、Rule Engine 或工程师确认。
+
+### `GET /llm/tools`
+
+返回当前允许暴露给 Provider 的工具 Schema：
+
+```text
+get_project
+calculate_resonant_tank
+run_design_review
+get_component_parameter
+analyze_waveform
+run_zvs_check
+find_similar_fault_cases
+search_engineering_evidence
+generate_review_report
+```
+
+### `POST /llm/orchestrate`
+
+请求：
+
+```json
+{
+  "message": "请读取项目并说明当前缺少哪些证据。",
+  "project_id": "project-uuid"
+}
+```
+
+响应要求结构化包含 `claims`、`evidence`、`missing_information`、`next_actions` 和
+`requires_engineer_confirmation`。每条 Claim 必须引用响应中的 `evidence_id`；工程
+数字必须带显式单位；安全、认证或量产相关措辞必须有 Evidence 且要求工程师确认。
+未经验证的 Datasheet 值、仿真值和估算值不能被模型改写为实测值。
+
+LLM 默认关闭。只有显式设置以下环境变量后才会发起 Provider 请求：
+
+```text
+LLM_ENABLED=true
+OPENAI_API_KEY=<local secret>
+OPENAI_MODEL=gpt-5.6-terra
+OPENAI_MAX_TOOL_ROUNDS=4
+```
+
+未配置时接口返回 `LLM_NOT_CONFIGURED`，不会回退到虚假的模型回答。测试使用 Fake
+Provider，不发送真实网络请求。
 
 ## Fault Diagnosis API（Phase 9）
 
