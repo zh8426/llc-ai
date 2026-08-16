@@ -2,6 +2,7 @@
 
 from app.models.base import Base
 from app.models.datasheet import DatasheetDocument, DatasheetParameter
+from app.models.fault_case import FaultCase
 from app.models.project import Project
 from app.models.review import (
     ReviewCalculationSnapshot,
@@ -14,6 +15,7 @@ __all__ = [
     "Base",
     "DatasheetDocument",
     "DatasheetParameter",
+    "FaultCase",
     "Project",
     "ReviewCalculationSnapshot",
     "ReviewFinding",

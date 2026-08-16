@@ -7,7 +7,9 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.datasheets import router as datasheets_router
+from app.api.diagnosis import router as diagnosis_router
 from app.api.errors import APIError, api_error_response
+from app.api.fault_cases import router as fault_cases_router
 from app.api.health import router as health_router
 from app.api.projects import router as projects_router
 from app.api.reports import history_router as historical_reports_router
@@ -103,3 +105,5 @@ app.include_router(reports_router)
 app.include_router(historical_reports_router)
 app.include_router(waveforms_router)
 app.include_router(datasheets_router)
+app.include_router(fault_cases_router)
+app.include_router(diagnosis_router)

@@ -1,6 +1,6 @@
 # REST API
 
-Phase 3–7 提供 Project 持久化、六项确定性计算、R001–R020 Design Review、ZVS 波形分析和 MOSFET Datasheet MVP API。默认地址为 `http://127.0.0.1:8000`，交互文档位于 `/docs`。
+Phase 3–9 提供 Project 持久化、六项确定性计算、R001–R020 Design Review、ZVS 波形分析、MOSFET Datasheet MVP、Verified FaultCase 和确定性 Fault Diagnosis API。默认地址为 `http://127.0.0.1:8000`，交互文档位于 `/docs`。
 
 所有 Engineering Quantity 都使用显式结构：
 
@@ -53,6 +53,7 @@ API 在持久化边界校验物理维度并转换为 SI。负数等维度正确�
 | `DATASHEET_PDF_INVALID` | 422 | PDF 无法提取可验证文本 |
 | `DATASHEET_NOT_FOUND` | 404 | 数据手册不存在 |
 | `DATASHEET_PARAMETER_NOT_FOUND` | 404 | 数据手册参数不存在 |
+| `FAULT_CASE_NOT_FOUND` | 404 | 故障案例不存在 |
 
 客户端不应依赖中文 `message` 或 `details` 的具体文本来判断错误类型；后续新增错误码时保持现有字段结构不变。
 
@@ -307,6 +308,44 @@ DATASHEET_NOT_FOUND
 DATASHEET_PARAMETER_NOT_FOUND
 ```
 
+## Fault Case API（Phase 8）
+
+Phase 8 提供结构化故障案例 CRUD 和确定性筛选/相似检索，不生成诊断结论。案例支持：
+
+```text
+case_id, topology, power, vin, vout, load
+symptom, observed_features, root_cause
+verification_steps, fix
+waveform_before, waveform_after
+engineer_verified
+```
+
+### `POST /fault-cases`
+
+创建案例。`power`、`vin`、`vout` 必须使用 `{value, unit}`；案例可以先以
+`engineer_verified=false` 保存，供研究和后续人工审核。系统不会根据文本推断根因，也
+不会自动把未确认案例作为正式诊断证据。
+
+### `GET /fault-cases`
+
+返回案例列表，并支持以下筛选参数：
+
+```text
+query: 对 symptom、root_cause、observed_features、verification_steps、fix 做 token overlap 检索
+symptom: 第一批预定义故障类型
+engineer_verified: true/false
+limit: 1–100，默认 50
+```
+
+有 `query` 时返回 `similarity_score`。该分数是可解释的 token overlap 检索分数，不是
+根因置信度，不表示安全概率，也不替代 Phase 9 的 Evidence Ranking。
+
+### `GET/PATCH/DELETE /fault-cases/{case_id}`
+
+分别读取、更新和删除案例。将 `engineer_verified` 更新为 `true` 后，响应中的
+`production_evidence_eligible` 才会为 `true`。只有人工确认案例才有资格进入未来的正式
+诊断证据；Phase 8 不执行诊断、不输出 Top 3 Candidate Causes。
+
 ## Development CORS
 
 允许的前端 Origin 由 `CORS_ORIGINS` 配置，默认：
@@ -317,6 +356,45 @@ http://localhost:5173
 ```
 
 本阶段没有 Authentication、Cloud Deployment 或公开网络安全配置。
+
+## Fault Diagnosis API（Phase 9）
+
+Phase 9 提供确定性的故障诊断编排，不调用 LLM/RAG，也不凭空生成根因。输入由项目
+ID、症状、工程师提供的观察特征和可选波形特征组成；系统读取该项目最新 Design
+Review，并只检索 `engineer_verified=true` 的 FaultCase。
+
+### `POST /fault-diagnoses`
+
+请求示例：
+
+```json
+{
+  "project_id": "project-uuid",
+  "symptom": "ZVS lost",
+  "observed_features": ["low resonant current at gate turn-on"],
+  "waveform_features": ["zvs_status=PARTIAL_ZVS"],
+  "contradicting_features": []
+}
+```
+
+响应包含最多 3 个 `candidate_causes`。每个候选均带有：
+
+```text
+source_case_id
+cause
+confidence
+supporting_evidence
+contradicting_evidence
+missing_information
+next_measurement
+recommended_action
+```
+
+`confidence` 是确定性的 token overlap 检索分数，不是概率、安全结论或工程裕量。
+`cause`、`next_measurement` 和 `recommended_action` 均直接来自已核验案例记录；系统
+不会把案例结论自动宣称为当前项目的唯一根因。若没有足够的已核验案例，响应返回少于
+3 个候选或空列表，并在 `limitations` 中明确说明证据不足。`contradicting_features`
+只记录调用方明确标记的反证文本，系统不会自行判断文本是否与根因矛盾。
 
 ## `POST /waveforms/zvs`
 

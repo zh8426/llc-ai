@@ -9,6 +9,14 @@ from app.schemas.datasheet import (
     DatasheetParserStatus,
     DatasheetValueType,
 )
+from app.schemas.diagnosis import (
+    CandidateCause,
+    DiagnosisEvidenceItem,
+    DiagnosisEvidenceSource,
+    DiagnosisEvidenceSummary,
+    FaultDiagnosisRequest,
+    FaultDiagnosisResponse,
+)
 from app.schemas.engineering import CalculationResult, EngineeringQuantity
 from app.schemas.errors import APIErrorResponse, ErrorCode
 from app.schemas.evidence import (
@@ -16,6 +24,13 @@ from app.schemas.evidence import (
     EvidenceSource,
     MeasurementEvidence,
     MeasurementSourceType,
+)
+from app.schemas.fault_case import (
+    FaultCaseCreate,
+    FaultCaseListResponse,
+    FaultCaseResponse,
+    FaultCaseUpdate,
+    FaultSymptom,
 )
 from app.schemas.project import (
     ControllerInput,
@@ -50,8 +65,19 @@ __all__ = [
     "DatasheetParameterUpdate",
     "DatasheetParserStatus",
     "DatasheetValueType",
+    "CandidateCause",
+    "DiagnosisEvidenceItem",
+    "DiagnosisEvidenceSource",
+    "DiagnosisEvidenceSummary",
+    "FaultDiagnosisRequest",
+    "FaultDiagnosisResponse",
     "APIErrorResponse",
     "ErrorCode",
+    "FaultCaseCreate",
+    "FaultCaseListResponse",
+    "FaultCaseResponse",
+    "FaultCaseUpdate",
+    "FaultSymptom",
     "EvidenceItem",
     "EvidenceSource",
     "Finding",

@@ -1,6 +1,6 @@
 # Architecture
 
-## 当前范围：Phase 7
+## 当前范围：Phase 9
 
 Phase 3 形成第一个 Project Design Review Web Workflow：
 
@@ -88,7 +88,7 @@ Waveform 文件、信号处理结果或 ZVS 分类。
 
 Review 还会保存同一次运行生成的 Calculation Snapshot，包括计算引擎版本、时间、完整六项 `CalculationResult`、缺失信息和公式错误。`/calculate` 与 Review 共用 `services/calculations.py::calculate_project()` 这一条 canonical execution path。R005–R010 从传入 ReviewContext 的快照结果读取基础计算，不重复执行 Phase 1 公式。
 
-开发环境默认 SQLite，通过 `DATABASE_URL` 可配置其他 SQLAlchemy Database URL。数据库 schema 由 Alembic migration 管理，当前基线 revision 为 `0001_phase0_4_baseline`。应用启动不再调用 `create_all()`，部署或本地启动前必须先执行 `python -m alembic upgrade head`。应用创建的 SQLite Engine 会显式启用 `PRAGMA foreign_keys=ON`，使模型声明的 `ON DELETE CASCADE` 在运行时生效。
+开发环境默认 SQLite，通过 `DATABASE_URL` 可配置其他 SQLAlchemy Database URL。数据库 schema 由 Alembic migration 管理，基础 revision 为 `0001_phase0_4_baseline`，当前 Phase 8 schema head 为 `0004_fault_cases`。应用启动不再调用 `create_all()`，部署或本地启动前必须先执行 `python -m alembic upgrade head`。应用创建的 SQLite Engine 会显式启用 `PRAGMA foreign_keys=ON`，使模型声明的 `ON DELETE CASCADE` 在运行时生效。
 
 测试 fixture 可以对隔离的临时内存数据库显式调用 `Base.metadata.create_all()`；该调用只负责测试装配，不是正式 schema evolution 路径。
 
@@ -202,7 +202,50 @@ PDF upload
 完成器件安全认证。扫描版 PDF、无法提取文本的 PDF 和未识别的参数都必须明确显示为
 解析限制，而不是由系统补全。
 
+## Fault Case Boundary（Phase 8）
+
+Phase 8 新增结构化 Verified Fault Case 存储与可解释检索基础设施：
+
+```text
+FaultCase 输入
+  → 显式单位校验与归一化（W / V）
+  → 结构化持久化
+  → symptom / engineer_verified 筛选
+  → token overlap 检索分数
+  → 证据记录返回
+```
+
+`FaultCase` 保存拓扑、功率/电压工况、症状、观察特征、工程师记录的根因、
+验证步骤、修复措施和波形引用。当前拓扑限定为 `Half-Bridge LLC`，症状使用
+工作流定义的固定枚举。`engineer_verified=true` 只表示该案例被明确标记为
+工程师已核验，并使其具备 `production_evidence_eligible` 标志；系统不会根据
+相似度自动核验案例，也不会把未核验案例升级为正式诊断证据。
+
+检索分数是查询 token 集合与案例文本 token 集合的 Jaccard overlap，属于可解释的
+检索排序信号，不是根因置信度、安全概率或工程裕量。Phase 8 不生成候选根因、
+不执行故障诊断、不调用 LLM/RAG，也不自动修改 Project、Datasheet 或 Review 数据。
+
+## Fault Diagnosis Boundary（Phase 9）
+
+Phase 9 只实现确定性的诊断编排：
+
+```text
+Project ID + symptom + observed / waveform features
+  → latest Design Review context
+  → engineer_verified=true FaultCase filter
+  → deterministic token-overlap ranking
+  → up to 3 candidate causes
+  → supporting / contradicting / missing evidence
+  → next measurement and recorded repair action
+```
+
+候选 `cause`、验证步骤和修复措施必须来自已核验 FaultCase；没有已核验案例时不生成
+新的根因。项目参数和 Review Finding 作为可追溯上下文返回，但 Phase 9 不把文本匹配
+冒充 LLC 物理因果模型，也不自动把任何 Finding 解释为根因。`confidence` 只是检索
+匹配分数，不是概率或安全判断。当前诊断结果不持久化，避免在未经工程师确认前形成
+不可变诊断记录。
+
 ## Phase Boundary
 
-Phase 7 不包含：OCR、BOM Parser、自动 Datasheet-to-Project mapping、Fault Diagnosis、
-LLM/RAG/AI Chat、Authentication、Payment 或 Cloud Deployment。
+Phase 9 不包含：OCR、BOM Parser、自动 Datasheet-to-Project mapping、LLM/RAG/AI Chat、
+自动安全结论、自动控制器调整、Authentication、Payment 或 Cloud Deployment。

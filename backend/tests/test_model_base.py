@@ -8,6 +8,7 @@ def test_sqlalchemy_metadata_contains_persistence_models() -> None:
     assert set(Base.metadata.tables) == {
         "datasheet_documents",
         "datasheet_parameters",
+        "fault_cases",
         "projects",
         "review_calculation_snapshots",
         "review_runs",

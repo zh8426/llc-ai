@@ -137,3 +137,42 @@ Phase 2 引入以下项目级规则定义，不引入通用数值裕量：
   也不是工程裕量。当前正则标签匹配候选为 `0.8`，文本 Package 候选为 `0.6`。
 - `human_verified` 默认必须为 `false`。只有工程师通过确认 API 后才可标记为 `true`；
   当前 Phase 7 不会将任何 Datasheet 值自动映射到 Project 或 Rule Engine。
+
+## Phase 8 Fault Case Definitions
+
+- `FaultCase` 当前只接受 `Half-Bridge LLC` 拓扑；症状枚举与工作流保持一致：ZVS lost、
+  MOSFET overheating、VDS overshoot、excessive resonant current、startup failure、
+  output undervoltage、output oscillation、transformer saturation suspected、
+  protection false triggering 和 light-load instability。
+- `power`、`vin`、`vout` 必须携带显式工程单位，持久化时分别归一化为 W、V；`load` 目前
+  仅保存为描述性文本，不对负载类型、阻抗或工作点作未声明的工程推断。
+- `observed_features`、`verification_steps` 和 `fix` 是工程师提供的结构化文本证据，
+  `root_cause` 是案例记录中的人工结论；Phase 8 不从这些字段推导新的 LLC 计算结果。
+- `engineer_verified` 默认是 `false`。只有调用方明确设置为 `true` 的案例才标记为
+  `production_evidence_eligible`；该标记不等同于安全认证、量产批准或系统自动验证。
+- 检索使用查询 token 集合与案例文本 token 集合的 Jaccard overlap：
+  `|intersection| / |union|`。该分数仅用于可解释的相似案例排序，不是置信度、故障
+  概率、严重度、安全裕量或根因正确率。
+- 当前检索在应用服务中读取结构化案例后进行确定性筛选和排序；Phase 8 不引入向量库、
+  语义嵌入、LLM/RAG 或自动故障诊断。
+
+## Phase 9 Fault Diagnosis Definitions
+
+- 诊断请求必须指定现有 `project_id` 和第一批故障症状；项目当前拓扑仍限定为
+  `Half-Bridge LLC`。
+- 诊断上下文由项目结构化参数、该项目最新的 report-eligible Review Finding、请求中
+  明确提供的 `observed_features` / `waveform_features` 以及匹配症状的
+  `engineer_verified=true` FaultCase 组成。缺少的上下文必须在 `missing_information`
+  或 `limitations` 中明确显示。
+- 候选根因只允许复制已核验 FaultCase 的 `root_cause`；系统不从症状、参数名称或
+  Finding 文本自行推导新的 LLC 物理根因。没有足够案例时返回少于 Top 3 的候选或空列表，
+  不使用占位根因填充结果。
+- `confidence` 定义为输入观察/波形特征 token 集合与候选案例文本 token 集合的
+  Jaccard overlap，范围为 `[0, 1]`。该值是检索排序分数，不是概率、准确率、严重度、
+  安全裕量或工程师信心。
+- `next_measurement` 与 `recommended_action` 直接来自候选案例的验证步骤和修复措施；
+  它们是待工程师复核的历史案例建议，不是对当前硬件的自动操作指令。
+- `contradicting_features` 只有在调用方明确提供时才会出现在候选的反证列表中；系统不
+  使用关键词或语言模型自行判断一段文本是否与候选根因矛盾。
+- Phase 9 不持久化诊断结果，不调用 LLM/RAG，不实现自动 Evidence Ranking 以外的
+  物理模型推理，也不修改 Project、Review、Waveform 或 FaultCase 数据。
