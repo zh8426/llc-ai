@@ -1,5 +1,8 @@
 import httpx
 import pytest
+from sqlalchemy import select
+
+from app.models.review import ReviewCalculationSnapshot, ReviewFinding, ReviewRun
 
 
 @pytest.mark.anyio
@@ -97,3 +100,57 @@ async def test_project_patch_rejects_null_name(
     assert response.status_code == 422
     assert response.json()["code"] == "INVALID_REQUEST"
     assert response.json()["details"]["reason"] == "name cannot be null"
+
+
+@pytest.mark.anyio
+async def test_project_delete_removes_project_and_cascades_review_history(
+    api_client: httpx.AsyncClient,
+    api_project_payload: dict[str, object],
+    api_session_factory,
+) -> None:
+    created = (await api_client.post("/projects", json=api_project_payload)).json()
+    project_id = created["id"]
+
+    review_response = await api_client.post(f"/projects/{project_id}/review")
+    assert review_response.status_code == 201
+
+    delete_response = await api_client.delete(f"/projects/{project_id}")
+    assert delete_response.status_code == 204
+    assert delete_response.content == b""
+
+    missing_response = await api_client.get(f"/projects/{project_id}")
+    assert missing_response.status_code == 404
+    assert missing_response.json()["code"] == "PROJECT_NOT_FOUND"
+
+    with api_session_factory() as session:
+        assert session.get(ReviewRun, review_response.json()["review_id"]) is None
+        assert session.scalars(select(ReviewFinding)).all() == []
+        assert session.scalars(select(ReviewCalculationSnapshot)).all() == []
+
+
+@pytest.mark.anyio
+async def test_project_delete_reports_missing_project(
+    api_client: httpx.AsyncClient,
+) -> None:
+    response = await api_client.delete("/projects/not-present")
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "PROJECT_NOT_FOUND"
+
+
+@pytest.mark.anyio
+async def test_project_delete_cors_preflight_is_allowed(
+    api_client: httpx.AsyncClient,
+) -> None:
+    response = await api_client.options(
+        "/projects/example-project",
+        headers={
+            "Origin": "http://127.0.0.1:5173",
+            "Access-Control-Request-Method": "DELETE",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5173"
+    assert "DELETE" in response.headers["access-control-allow-methods"]

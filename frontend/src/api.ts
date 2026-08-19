@@ -105,6 +105,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw await createApiRequestError(response)
   }
 
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 
@@ -141,6 +142,10 @@ export function updateProject(
     method: 'PATCH',
     body: JSON.stringify(payload),
   })
+}
+
+export function deleteProject(projectId: string): Promise<void> {
+  return request<void>(`/projects/${projectId}`, { method: 'DELETE' })
 }
 
 export function runReview(projectId: string): Promise<Review> {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import {
   createProject,
+  deleteProject,
   getLatestReview,
   listProjects,
   runReview,
@@ -128,6 +129,30 @@ export function useProjectWorkspace() {
     }
   }
 
+  async function deleteSelectedProject() {
+    if (selectedProject === null) return
+    const projectName = selectedProject.name
+    if (!window.confirm(`确定删除项目“${projectName}”吗？该项目的评审历史也会被删除。`)) {
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      await deleteProject(selectedProject.id)
+      const remaining = await listProjects()
+      setProjects(remaining)
+      const nextProject = remaining[0] ?? null
+      setSelectedProject(nextProject)
+      setForm(nextProject === null ? emptyForm : projectToForm(nextProject))
+      setReview(nextProject === null ? null : await getLatestReview(nextProject.id))
+      setNotice(nextProject === null ? '项目已删除，可以创建新项目。' : '项目已删除，已切换到下一个项目。')
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '项目删除失败。')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return {
     projects,
     selectedProject,
@@ -143,5 +168,6 @@ export function useProjectWorkspace() {
     handleCreateProject,
     saveProject,
     saveAndRunReview,
+    deleteSelectedProject,
   }
 }

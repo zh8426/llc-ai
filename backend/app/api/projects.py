@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.errors import APIError
@@ -23,6 +23,7 @@ from app.services.calculations import (
 )
 from app.services.projects import (
     create_project,
+    delete_project,
     get_project,
     list_projects,
     project_to_response,
@@ -108,6 +109,19 @@ def patch_project(
             details={"reason": str(error)},
         ) from error
     return project_to_response(project)
+
+
+@router.delete(
+    "/{project_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a project and its dependent review history",
+)
+def delete_project_by_id(
+    project_id: str, session: SessionDependency
+) -> Response:
+    project = require_project(session, project_id)
+    delete_project(session, project)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

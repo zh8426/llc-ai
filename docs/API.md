@@ -132,6 +132,10 @@ review_settings
 }
 ```
 
+## `DELETE /projects/{project_id}`
+
+删除指定项目并返回 `204 No Content`。该操作同时删除项目下的 Review、Finding、Project Snapshot 和 Calculation Snapshot；项目删除前应由用户在前端确认。项目不存在时返回统一错误码 `PROJECT_NOT_FOUND`。
+
 ## `POST /projects/{project_id}/calculate`
 
 运行 Phase 1 六项基础计算：

@@ -151,6 +151,15 @@ datasets/                 Rules, fault cases and evaluation datasets
 scripts/                  Development utilities
 ```
 
+Frontend 功能页面使用轻量级 History 路由并按页面懒加载：
+
+- `/`：项目参数与设计评审
+- `/gain-curve`：FHA 增益曲线
+- `/waveform`：波形与 ZVS 分析
+- `/datasheets`：数据手册候选
+
+项目编辑页提供“删除项目”操作；删除前会要求确认，并由 Backend 级联清理该项目的评审历史。
+
 ## Local Development
 
 环境要求：

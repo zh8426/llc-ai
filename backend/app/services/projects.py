@@ -169,6 +169,13 @@ def get_project(session: Session, project_id: str) -> Project | None:
     return session.get(Project, project_id)
 
 
+def delete_project(session: Session, project: Project) -> None:
+    """Delete a project and let database cascades remove dependent snapshots."""
+
+    session.delete(project)
+    session.commit()
+
+
 def update_project(
     session: Session, project: Project, payload: ProjectUpdate
 ) -> Project:

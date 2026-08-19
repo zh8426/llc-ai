@@ -197,6 +197,43 @@ input:disabled {
   max-width: 1180px;
 }
 
+.workspace-nav {
+  display: flex;
+  max-width: 1180px;
+  margin: 0 auto 22px;
+  gap: 8px;
+  overflow-x: auto;
+  border-bottom: 1px solid #dce5e0;
+}
+
+.workspace-nav button {
+  padding: 10px 13px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: #6b7d76;
+  font-size: 0.78rem;
+  font-weight: 750;
+  white-space: nowrap;
+  background: transparent;
+}
+
+.workspace-nav button:hover,
+.workspace-nav .workspace-nav-active {
+  border-bottom-color: #2b8a67;
+  color: #1c6b50;
+}
+
+.page-loading {
+  max-width: 1180px;
+  margin: 0 auto 26px;
+  padding: 58px 24px;
+  border: 1px solid #dce3df;
+  border-radius: 20px;
+  color: #65776f;
+  text-align: center;
+  background: #fff;
+}
+
 .eyebrow {
   margin: 0 0 7px;
   color: #298465;
@@ -296,6 +333,21 @@ h2 {
   border-radius: 10px;
   font-size: 0.84rem;
   font-weight: 750;
+}
+
+.button-danger {
+  padding: 11px 17px;
+  border: 1px solid #e2baba;
+  border-radius: 10px;
+  color: #8d3737;
+  font-size: 0.84rem;
+  font-weight: 750;
+  background: #fff7f7;
+}
+
+.button-danger:hover {
+  border-color: #c97878;
+  background: #ffeded;
 }
 
 .button-primary {
@@ -1374,6 +1426,10 @@ h2 {
 
   .editor-actions button {
     flex: 1;
+  }
+
+  .editor-actions .button-danger {
+    flex: 0 0 auto;
   }
 
   .finding summary {

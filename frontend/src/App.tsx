@@ -1,13 +1,17 @@
-import DatasheetPanel from './components/DatasheetPanel'
-import GainCurvePanel from './components/GainCurvePanel'
-import ProjectEditor from './components/ProjectEditor'
+import { lazy, Suspense } from 'react'
+
 import ProjectSidebar from './components/ProjectSidebar'
-import ReviewPanel from './components/ReviewPanel'
-import WaveformPanel from './components/WaveformPanel'
 import { useProjectWorkspace } from './hooks/useProjectWorkspace'
+import { useAppRoute } from './hooks/useAppRoute'
+
+const ProjectPage = lazy(() => import('./pages/ProjectPage'))
+const GainCurvePage = lazy(() => import('./pages/GainCurvePage'))
+const WaveformPage = lazy(() => import('./pages/WaveformPage'))
+const DatasheetsPage = lazy(() => import('./pages/DatasheetsPage'))
 
 function App() {
   const workspace = useProjectWorkspace()
+  const { route, navigate } = useAppRoute()
 
   return (
     <main className="app-shell">
@@ -18,7 +22,10 @@ function App() {
         busy={workspace.busy}
         onNewProjectNameChange={workspace.setNewProjectName}
         onCreateProject={() => void workspace.handleCreateProject()}
-        onOpenProject={(project) => void workspace.openProject(project)}
+        onOpenProject={(project) => {
+          void workspace.openProject(project)
+          navigate('/')
+        }}
       />
 
       <div className="workspace">
@@ -35,39 +42,38 @@ function App() {
           </div>
         </header>
 
-        {workspace.selectedProject === null ? (
-          <section className="empty-state">
-            <p className="eyebrow">LLC 设计评审</p>
-            <h2>新建第一个 LLC 项目</h2>
-            <p>
-              使用左侧输入框创建项目，然后填写带单位的设计参数并运行确定性评审。
-            </p>
-          </section>
-        ) : (
-          <>
-            <ProjectEditor
+        <nav className="workspace-nav" aria-label="功能页面">
+          <button className={route === 'project' ? 'workspace-nav-active' : ''} onClick={() => navigate('/')} type="button">
+            项目与评审
+          </button>
+          <button className={route === 'gain-curve' ? 'workspace-nav-active' : ''} onClick={() => navigate('/gain-curve')} type="button">
+            FHA 增益曲线
+          </button>
+          <button className={route === 'waveform' ? 'workspace-nav-active' : ''} onClick={() => navigate('/waveform')} type="button">
+            波形与 ZVS
+          </button>
+          <button className={route === 'datasheets' ? 'workspace-nav-active' : ''} onClick={() => navigate('/datasheets')} type="button">
+            数据手册
+          </button>
+        </nav>
+
+        <Suspense fallback={<section className="page-loading">正在加载功能模块…</section>}>
+          {route === 'project' && (
+            <ProjectPage
+              selectedProject={workspace.selectedProject}
               form={workspace.form}
               busy={workspace.busy}
+              review={workspace.review}
               onUpdateForm={workspace.updateForm}
               onSave={() => void workspace.saveProject()}
               onSaveAndRunReview={() => void workspace.saveAndRunReview()}
+              onDelete={() => void workspace.deleteSelectedProject()}
             />
-
-            {workspace.review === null ? (
-              <section className="review-placeholder">
-                <p className="eyebrow">暂无评审结果</p>
-                <h2>保存参数并运行 R001–R026</h2>
-                <p>缺少的数据将明确显示为“数据不足”，不会由系统猜测。</p>
-              </section>
-            ) : (
-              <ReviewPanel review={workspace.review} />
-            )}
-          </>
-        )}
-
-        <GainCurvePanel project={workspace.selectedProject} />
-        <WaveformPanel />
-        <DatasheetPanel />
+          )}
+          {route === 'gain-curve' && <GainCurvePage project={workspace.selectedProject} />}
+          {route === 'waveform' && <WaveformPage />}
+          {route === 'datasheets' && <DatasheetsPage />}
+        </Suspense>
       </div>
     </main>
   )

@@ -7,6 +7,7 @@ type ProjectEditorProps = {
   onUpdateForm: (field: keyof ProjectForm, value: string | boolean) => void
   onSave: () => void
   onSaveAndRunReview: () => void
+  onDelete: () => void
 }
 
 export default function ProjectEditor({
@@ -15,6 +16,7 @@ export default function ProjectEditor({
   onUpdateForm,
   onSave,
   onSaveAndRunReview,
+  onDelete,
 }: ProjectEditorProps) {
   return (
     <section className="editor-panel" aria-labelledby="editor-title">
@@ -29,6 +31,9 @@ export default function ProjectEditor({
           </button>
           <button className="button-primary" onClick={onSaveAndRunReview} disabled={busy} type="button">
             {busy ? '处理中…' : '保存并开始评审'}
+          </button>
+          <button className="button-danger" onClick={onDelete} disabled={busy} type="button">
+            删除项目
           </button>
         </div>
       </div>
