@@ -2,6 +2,68 @@
 
 本文记录 Phase 1 确定性计算与 Phase 2 规则引擎引入的公式定义、输入约束、单位约定、项目级配置和适用边界。依据为 `docs/MASTER_WORKFLOW.md` 第 10、12–13 节。
 
+## Cross-Phase E1-A：变压器匝比约定
+
+- 项目统一定义变压器匝比为 `n = Np / Ns`，即原边匝数除以副边匝数。
+- `transformer_ratio` 的 API 单位为 `dimensionless`，数值必须为有限正值；它表示匝数比，不表示百分比、增益或电压比的另一种隐式定义。
+- 任何后续 FHA、Required Gain 或 Operating Point 计算必须复用该约定，不得在模块内部改用 `Ns / Np`。
+- 当前 E1-A 只统一定义和输入边界；现有 R018 仍只检查完整增益评审的前置数据，不执行增益计算。
+- 当前不根据 `Vin`、`Vout` 或文件名反推匝比，也不自动修改用户保存的 `transformer_ratio`。
+
+## Cross-Phase E1-B：FHA 基础量
+
+- 直流输出负载电阻定义为 `Ro = Vout² / Pout`，其中 `Pout` 与 `Vout` 必须来自同一稳态工作点。
+- 对当前限定的 Half-Bridge LLC + Diode Rectification，FHA 等效初级负载采用
+  `Re = (8 / π²) × n² × Ro`，公式版本为 `LLC-RE-FHA-V1`。该系数与 `n = Np / Ns` 约定来自 TI UCC25600 数据手册的半桥 LLC 设计方程。
+- 品质因数定义为 `Qe = Zr / Re`，其中 `Zr = √(Lr / Cr)`，公式版本为 `LLC-QE-FHA-V1`。
+- 归一化开关频率定义为 `Fn = fs / fr`，公式版本为 `LLC-FN-FHA-V1`；`fs = fr` 时 `Fn = 1`。
+- E1-B 仅计算 FHA 的输入量，不计算复阻抗、增益曲线、感性/容性区域、工作点频率或安全结论。FHA 的适用性仍受寄生参数、整流器行为、轻载和偏离谐振点等因素影响。
+
+## Cross-Phase E1-C：FHA 复阻抗与增益
+
+- 角频率定义为 `ω = 2πfs`，其中 `fs` 为正的实际开关频率。
+- 理想 FHA 网络的元件阻抗定义为 `ZLr = jωLr`、`ZCr = 1/(jωCr)`、`ZLm = jωLm`；等效负载 `Re` 与励磁电感并联：`Zp = ZLm || Re`。
+- 输入阻抗定义为 `Zin = ZLr + ZCr + Zp`，结构化结果同时保存其实部、虚部、幅值和归一化输入。
+- FHA tank gain 定义为 `H(jω) = Zp / Zin`、`MFHA = |H(jω)|`，公式版本分别为 `LLC-ZIN-FHA-V1` 和 `LLC-GAIN-FHA-V1`。
+- E1-C 假设稳态、理想线性 FHA 阻抗网络，所有 `Lr`、`Lm`、`Cr`、`Re`、`fs` 均为正值；不推断寄生参数、整流器换流细节或测试安全性。
+- E1-C 只计算单个给定频率的复阻抗与增益，不进行感性/容性区域分类、Required Gain、工作点求解、增益曲线 API 或前端展示。
+
+## Cross-Phase E1-D：感性/容性工作区域
+
+- 工作区域只根据 FHA 输入阻抗的虚部 `Im(Zin)` 判定，不使用 `fs < fr` 或 `fs > fr` 作为替代规则。
+- `Im(Zin) > 0` 分类为 `INDUCTIVE`，`Im(Zin) < 0` 分类为 `CAPACITIVE`，接近零时分类为 `BOUNDARY`。
+- `LLC-REGION-FHA-V1` 使用 `1e-12 ohm` 作为浮点数零点比较容差；该容差仅用于数值边界处理，不是工程裕量、ZVS 阈值或安全判据。
+- E1-D 的 `INDUCTIVE` 结果只表示 FHA 模型下的输入阻抗区域，不等同于 ZVS 成功、设计安全或可量产结论。
+- E1-D 只复用 E1-C 的单频 `Zin`；不执行 Required Gain、工作点求解、频率扫描或控制器范围覆盖判断。
+
+## Cross-Phase E1-E：Required Gain 与工作点求解
+
+- 当前限定的 Half-Bridge LLC 使用 `Mreq = Vin / (2 × n × Vout)`，其中 `n = Np / Ns`；公式版本为 `LLC-MREQ-FHA-V1`。
+- `solve_operating_frequency()` 在显式的 `[fsw_min, fsw_max]` 范围内求解 `MFHA(fsw) = Mreq`，并保留范围内的全部数值根作为 `candidates` 证据。
+- 每个候选根都会重新计算 `Zin` 和工作区域；只有 `operating_region = INDUCTIVE` 的候选根才可成为 `selected` 工作点。容性或边界根不会被伪装成正常工作点。
+- 求解器使用确定性的对数频率扫描和二分收敛；扫描点数与收敛容差是数值算法设置，不是工程裕量或安全阈值。
+- 无根或没有感性候选根时返回 `NO_VALID_OPERATING_POINT`，同时保留已找到的候选根，不抛出“可运行”结论。
+- E1-E 只输出 FHA 工作点估计，不判断控制器频率覆盖、峰值增益裕量、ZVS 成功、器件应力或设计安全。
+
+## Cross-Phase E1-F：Operating Envelope 与 R021–R026
+
+- Operating Envelope 在 `[fsw_min, fsw_max]` 内扫描 FHA 增益，保留最大可用增益、对应频率和输入阻抗区域，并分别求解 `Vin Min`、`Vin Nom`、`Vin Max` 的 Required Gain 工作点。
+- R021 检查建立 FHA 工作包络所需的完整输入；缺失或量纲无效时返回 `INSUFFICIENT_DATA`。
+- R022 比较扫描得到的 `Mavailable,max` 与 `Mrequired,max`；不足时只返回 `WARNING`，不输出 `CRITICAL` 或安全结论。
+- R023 检查标称工作点的 FHA 区域；感性为 `PASS`，容性为 `WARNING`，不得将容性结果表述为 ZVS 必然失败。
+- R024 检查标称工作频率是否落在配置的 `[fsw_min, fsw_max]` 内；不满足时返回 `WARNING`。
+- R025 只报告 FHA 峰值增益和所需增益对比，当前不硬编码峰值增益裕量阈值，因此为 `INFO`。
+- R026 提醒远离谐振点、轻载和寄生参数可能降低 FHA 估计适用性；不把模型估计描述为实测或安全结论。
+- R021–R026 仅在请求完整增益评审时执行；未请求时返回 `INFO`，不猜测或补全 FHA 输入。
+
+## Cross-Phase E1-G：增益曲线 API 与前端展示
+
+- `calculate_gain_curve()` 在项目保存的 `[fsw_min, fsw_max]` 范围内执行线性频率扫描；频率端点和扫描点数均保留在结构化结果中。
+- 增益曲线每个点复用 E1-C 的 `MFHA`、`Zin`，复用 E1-D 的 `Im(Zin)` 工作区域分类，并记录 `Fn = fs / fr`；曲线不是另一套 FHA 公式。
+- API `POST /projects/{project_id}/gain-curve` 只接受 `point_count`（2–1001）作为扫描控制量。`Lr/Lm/Cr/Vout/Pout/transformer_ratio/Fsw Min/Max` 必须来自已保存项目；缺失时返回 `MISSING_REQUIRED_DATA`，不猜测或补值。
+- `LLC-GAIN-CURVE-FHA-V1` 只标识当前确定性扫描实现；前端 SVG 图表是展示层，不改变结构化结果，也不把 FHA 估计描述为实测、ZVS、安全或量产结论。
+- 扫描点上限是 API 资源边界，不是工程阈值；线性扫描选择是展示与可重复性约定，不代表控制器实际调频轨迹或最优工作点。
+
 ## Unit Boundary
 
 - 所有输入都必须使用 `{value, unit}` 形式显式携带单位。
@@ -21,6 +83,18 @@
 | `LLC-LM-LR-RATIO-V1` | Inductance ratio | `Lm / Lr` | dimensionless |
 | `LLC-IOUT-V1` | Output current | `Iout = Pout / Vout` | A |
 | `LLC-PIN-V1` | Input power estimate | `Pin = Pout / efficiency` | W |
+| `LLC-RO-FHA-V1` | Output resistance | `Ro = Vout² / Pout` | ohm |
+| `LLC-RE-FHA-V1` | FHA equivalent load | `Re = (8 / π²) × n² × Ro` | ohm |
+| `LLC-QE-FHA-V1` | FHA quality factor | `Qe = Zr / Re` | dimensionless |
+| `LLC-FN-FHA-V1` | Normalized frequency | `Fn = fs / fr` | dimensionless |
+| `LLC-MREQ-FHA-V1` | Required gain | `Mreq = Vin / (2 × n × Vout)` | dimensionless |
+| `LLC-ZIN-FHA-V1` | FHA input impedance | `Zin = ZLr + ZCr + (ZLm || Re)` | ohm |
+| `LLC-GAIN-FHA-V1` | FHA tank gain | `MFHA = abs((ZLm || Re) / Zin)` | dimensionless |
+| `LLC-REGION-FHA-V1` | FHA operating region | sign of `Im(Zin)` | enum |
+| `LLC-OPERATING-POINT-FHA-V1` | FHA operating point | `MFHA(fsw) = Mreq` with inductive-region selection | structured |
+| `LLC-AVAILABLE-GAIN-FHA-V1` | Available FHA maximum gain | `max(MFHA(fsw))` over configured frequency range | dimensionless |
+| `LLC-OPERATING-ENVELOPE-FHA-V1` | FHA operating envelope | Vin Min/Nom/Max targets plus scanned gain peak | structured |
+| `LLC-GAIN-CURVE-FHA-V1` | FHA gain curve | linear scan of `MFHA`, `Fn`, `Zin`, and operating region over `[fsw_min, fsw_max]` | structured |
 
 ## Resonant Tank Applicability
 

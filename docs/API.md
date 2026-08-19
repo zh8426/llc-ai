@@ -1,6 +1,6 @@
 # REST API
 
-Phase 3–10 提供 Project 持久化、六项确定性计算、R001–R020 Design Review、ZVS 波形分析、MOSFET Datasheet MVP、Verified FaultCase、确定性 Fault Diagnosis 和受约束的 LLM Engineering Orchestration API。默认地址为 `http://127.0.0.1:8000`，交互文档位于 `/docs`。
+Phase 3–10 提供 Project 持久化、六项确定性计算、R001–R026 Design Review、FHA 增益曲线、ZVS 波形分析、MOSFET Datasheet MVP、Verified FaultCase、确定性 Fault Diagnosis 和受约束的 LLM Engineering Orchestration API。默认地址为 `http://127.0.0.1:8000`，交互文档位于 `/docs`。
 
 所有 Engineering Quantity 都使用显式结构：
 
@@ -82,7 +82,7 @@ vin_min, vin_nom, vin_max
 vout, iout, pout, target_efficiency
 lr, lm, cr
 fsw_min, fsw_nom, fsw_max
-transformer_ratio, dead_time
+transformer_ratio (`n = Np / Ns`), dead_time
 primary_switch
 resonant_capacitor
 controller
@@ -160,9 +160,32 @@ Pin estimate
 
 每个成功结果保留输入快照、单位和 formula version。该响应就是本次 canonical Calculation Snapshot。项目不完整时 endpoint 仍返回 `200`，并在 `missing_information` 列出缺失字段；公式输入无效时在 `errors` 中返回确定性错误，不生成伪结果。
 
+## `POST /projects/{project_id}/gain-curve`
+
+在已保存项目的 `fsw_min`–`fsw_max` 范围内生成确定性 FHA 增益曲线。请求体只控制扫描点数，避免 API 隐式补充工程参数：
+
+```json
+{
+  "point_count": 101
+}
+```
+
+`point_count` 必须是 `2–1001` 的整数。项目必须已保存 `lr`、`lm`、`cr`、`vout`、`pout`、`transformer_ratio`、`fsw_min` 和 `fsw_max`；否则返回统一错误码 `MISSING_REQUIRED_DATA`。成功响应保留：
+
+```text
+project_id
+frequency_min / frequency_max / point_count
+resonant_frequency / equivalent_load / quality_factor
+points[]: switching_frequency, normalized_frequency, tank_gain,
+          input_impedance, operating_region
+formula_version = LLC-GAIN-CURVE-FHA-V1
+```
+
+曲线点使用线性频率扫描；`operating_region` 只表示 FHA 输入阻抗的感性/容性分类，不是 ZVS、安全或量产结论。每个点均带有单点公式版本与输入快照，前端据此绘制展示曲线。
+
 ## `POST /projects/{project_id}/review`
 
-从已保存的结构化 Project 运行一次 canonical calculation，使用该 Calculation Snapshot 构建 `ReviewContext`，运行 R001–R020，并持久化 Project Snapshot、Calculation Snapshot、Review Run 与每条 Finding。成功返回 `201`：
+从已保存的结构化 Project 运行一次 canonical calculation，使用该 Calculation Snapshot 构建 `ReviewContext`，运行 R001–R026，并持久化 Project Snapshot、Calculation Snapshot、Review Run 与每条 Finding。成功返回 `201`：
 
 ```json
 {

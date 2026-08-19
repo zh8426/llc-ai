@@ -31,9 +31,9 @@ class UnsupportedWarningRule(ReviewRule):
         )
 
 
-def test_builtin_registry_contains_r001_through_r020_in_order() -> None:
+def test_builtin_registry_contains_r001_through_r026_in_order() -> None:
     assert [rule.rule_id for rule in BUILTIN_RULES] == [
-        f"LLC-R{number:03d}" for number in range(1, 21)
+        f"LLC-R{number:03d}" for number in range(1, 27)
     ]
 
 
@@ -44,16 +44,16 @@ def test_review_engine_exposes_immutable_rule_order() -> None:
     assert isinstance(engine.rules, tuple)
 
 
-def test_normal_context_returns_twenty_eligible_findings(
+def test_normal_context_returns_twenty_six_eligible_findings(
     normal_review_context: ReviewContext,
 ) -> None:
     result = run_design_review(normal_review_context)
 
-    assert len(result.findings) == 20
+    assert len(result.findings) == 26
     assert result.excluded_findings == ()
     assert result.summary.model_dump(by_alias=True) == {
-        "pass": 13,
-        "info": 7,
+        "pass": 17,
+        "info": 9,
         "warning": 0,
         "critical": 0,
         "insufficient_data": 0,
@@ -65,7 +65,7 @@ def test_incomplete_context_returns_structured_missing_information(
 ) -> None:
     result = run_design_review(incomplete_review_context)
 
-    assert len(result.findings) == 20
+    assert len(result.findings) == 26
     assert result.summary.insufficient_data >= 10
     assert any(finding.missing_information for finding in result.findings)
 

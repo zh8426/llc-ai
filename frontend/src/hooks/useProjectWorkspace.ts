@@ -51,7 +51,7 @@ export function useProjectWorkspace() {
     }
   }, [])
 
-  function updateForm(field: keyof ProjectForm, value: string) {
+  function updateForm(field: keyof ProjectForm, value: string | boolean) {
     setForm((current) => ({ ...current, [field]: value }))
   }
 
@@ -117,7 +117,7 @@ export function useProjectWorkspace() {
     if (updated === null) return
     setBusy(true)
     setError('')
-    setNotice('正在执行 R001–R020…')
+    setNotice('正在执行 R001–R026…')
     try {
       setReview(await runReview(updated.id))
       setNotice('设计评审已完成。')

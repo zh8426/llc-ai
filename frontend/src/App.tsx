@@ -1,4 +1,5 @@
 import DatasheetPanel from './components/DatasheetPanel'
+import GainCurvePanel from './components/GainCurvePanel'
 import ProjectEditor from './components/ProjectEditor'
 import ProjectSidebar from './components/ProjectSidebar'
 import ReviewPanel from './components/ReviewPanel'
@@ -55,7 +56,7 @@ function App() {
             {workspace.review === null ? (
               <section className="review-placeholder">
                 <p className="eyebrow">暂无评审结果</p>
-                <h2>保存参数并运行 R001–R020</h2>
+                <h2>保存参数并运行 R001–R026</h2>
                 <p>缺少的数据将明确显示为“数据不足”，不会由系统猜测。</p>
               </section>
             ) : (
@@ -64,6 +65,7 @@ function App() {
           </>
         )}
 
+        <GainCurvePanel project={workspace.selectedProject} />
         <WaveformPanel />
         <DatasheetPanel />
       </div>

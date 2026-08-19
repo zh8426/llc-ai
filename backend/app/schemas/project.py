@@ -3,7 +3,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.schemas.engineering import CalculationSnapshot, EngineeringQuantity
+from app.schemas.engineering import (
+    CalculationSnapshot,
+    EngineeringQuantity,
+    GainCurveResult,
+)
 from app.schemas.review import (
     Finding,
     ReviewRequests,
@@ -72,7 +76,10 @@ class ProjectCreate(BaseModel):
     fsw_min: EngineeringQuantity | None = None
     fsw_nom: EngineeringQuantity | None = None
     fsw_max: EngineeringQuantity | None = None
-    transformer_ratio: EngineeringQuantity | None = None
+    transformer_ratio: EngineeringQuantity | None = Field(
+        default=None,
+        description="Primary-to-secondary transformer turns ratio n = Np / Ns.",
+    )
     dead_time: EngineeringQuantity | None = None
     rectification_type: Literal["Diode Rectification"] = "Diode Rectification"
     primary_switch: PrimarySwitchInput = Field(default_factory=PrimarySwitchInput)
@@ -109,7 +116,10 @@ class ProjectUpdate(BaseModel):
     fsw_min: EngineeringQuantity | None = None
     fsw_nom: EngineeringQuantity | None = None
     fsw_max: EngineeringQuantity | None = None
-    transformer_ratio: EngineeringQuantity | None = None
+    transformer_ratio: EngineeringQuantity | None = Field(
+        default=None,
+        description="Primary-to-secondary transformer turns ratio n = Np / Ns.",
+    )
     dead_time: EngineeringQuantity | None = None
     primary_switch: PrimarySwitchInput | None = None
     resonant_capacitor: ResonantCapacitorInput | None = None
@@ -142,6 +152,20 @@ class ProjectListResponse(BaseModel):
 
 class ProjectCalculationResponse(CalculationSnapshot):
     """API representation of the canonical Calculation Snapshot."""
+
+
+class ProjectGainCurveRequest(BaseModel):
+    """Controls the bounded frequency sampling used by the gain-curve API."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    point_count: int = Field(default=101, ge=2, le=1001)
+
+
+class ProjectGainCurveResponse(GainCurveResult):
+    """Project-scoped deterministic FHA gain curve."""
+
+    project_id: str = Field(min_length=1)
 
 
 class ProjectReviewResponse(BaseModel):

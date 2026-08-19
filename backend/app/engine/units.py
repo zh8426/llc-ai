@@ -1,4 +1,5 @@
 from math import isfinite
+from typing import Final
 
 from pint import UnitRegistry
 from pint.errors import PintError
@@ -7,6 +8,7 @@ from app.engine.exceptions import InvalidEngineeringQuantityError
 from app.schemas.engineering import EngineeringQuantity
 
 _UNIT_REGISTRY: UnitRegistry = UnitRegistry()
+TRANSFORMER_RATIO_CONVENTION: Final = "n = Np / Ns"
 
 
 def normalize_quantity(
@@ -49,6 +51,20 @@ def normalize_positive_quantity(
         raise InvalidEngineeringQuantityError(f"{name} must be greater than zero")
 
     return normalized
+
+
+def normalize_transformer_ratio(quantity: EngineeringQuantity) -> EngineeringQuantity:
+    """Normalize the project-defined primary-to-secondary turns ratio.
+
+    The semantic convention is ``n = Np / Ns``.  This helper centralizes the
+    dimensionless, strictly-positive boundary used by future gain calculations.
+    """
+
+    return normalize_positive_quantity(
+        name="transformer_ratio",
+        quantity=quantity,
+        target_unit="dimensionless",
+    )
 
 
 def normalize_efficiency(quantity: EngineeringQuantity) -> EngineeringQuantity:

@@ -3,6 +3,7 @@ import type {
   ProjectPayload,
   Review,
   Datasheet,
+  GainCurve,
   WaveformAnalysisRequest,
   ZVSAnalysis,
 } from './types'
@@ -144,6 +145,16 @@ export function updateProject(
 
 export function runReview(projectId: string): Promise<Review> {
   return request<Review>(`/projects/${projectId}/review`, { method: 'POST' })
+}
+
+export function generateGainCurve(
+  projectId: string,
+  pointCount: number,
+): Promise<GainCurve> {
+  return request<GainCurve>(`/projects/${projectId}/gain-curve`, {
+    method: 'POST',
+    body: JSON.stringify({ point_count: pointCount }),
+  })
 }
 
 export async function getLatestReview(projectId: string): Promise<Review | null> {

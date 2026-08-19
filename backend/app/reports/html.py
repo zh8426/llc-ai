@@ -38,6 +38,12 @@ FINDING_TITLE_LABELS = {
     "LLC-R018": "变压器匝比要求",
     "LLC-R019": "增益评审前置条件",
     "LLC-R020": "依据完整性检查",
+    "LLC-R021": "FHA 增益模型前置条件",
+    "LLC-R022": "所需增益覆盖能力",
+    "LLC-R023": "工作点区域",
+    "LLC-R024": "工作频率能力",
+    "LLC-R025": "FHA 峰值增益信息",
+    "LLC-R026": "FHA 适用性",
 }
 
 EVIDENCE_SOURCE_LABELS = {
@@ -56,6 +62,11 @@ CALCULATION_LABELS = {
     "lm_lr_ratio": "电感比 Lm/Lr",
     "output_current": "输出电流 Iout",
     "input_power": "输入功率 Pin",
+    "available_gain_max": "FHA 最大可用增益",
+    "required_gain_at_vin_min": "Vin Min 所需增益",
+    "required_gain_at_vin_nom": "Vin Nom 所需增益",
+    "required_gain_at_vin_max": "Vin Max 所需增益",
+    "nominal_normalized_frequency": "标称归一化频率",
 }
 
 DATA_LABELS = {
@@ -80,6 +91,10 @@ DATA_LABELS = {
     "capacitor_voltage_stress": "谐振电容电压应力",
     "capacitor_rms_current_rating": "谐振电容 RMS 电流额定值",
     "capacitor_rms_current_stress": "谐振电容 RMS 电流应力",
+    "available_gain_frequency": "FHA 最大增益频率",
+    "input_impedance_imaginary": "输入阻抗虚部",
+    "nominal_tank_gain": "标称 FHA Tank Gain",
+    "switching_frequency": "工作开关频率",
 }
 
 

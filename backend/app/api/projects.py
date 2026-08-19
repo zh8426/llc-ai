@@ -10,11 +10,17 @@ from app.models.project import Project
 from app.schemas.project import (
     ProjectCalculationResponse,
     ProjectCreate,
+    ProjectGainCurveRequest,
+    ProjectGainCurveResponse,
     ProjectListResponse,
     ProjectResponse,
     ProjectUpdate,
 )
-from app.services.calculations import calculate_project
+from app.services.calculations import (
+    ProjectGainCurveMissingDataError,
+    calculate_project,
+    calculate_project_gain_curve,
+)
 from app.services.projects import (
     create_project,
     get_project,
@@ -112,3 +118,33 @@ def post_project_calculation(
     project_id: str, session: SessionDependency
 ) -> ProjectCalculationResponse:
     return calculate_project(require_project(session, project_id))
+
+
+@router.post(
+    "/{project_id}/gain-curve",
+    response_model=ProjectGainCurveResponse,
+    summary="Generate a deterministic FHA gain curve for a project",
+)
+def post_project_gain_curve(
+    project_id: str,
+    payload: ProjectGainCurveRequest,
+    session: SessionDependency,
+) -> ProjectGainCurveResponse:
+    try:
+        return calculate_project_gain_curve(
+            require_project(session, project_id), point_count=payload.point_count
+        )
+    except ProjectGainCurveMissingDataError as error:
+        raise APIError(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "MISSING_REQUIRED_DATA",
+            "生成增益曲线所需的项目参数不完整。",
+            details={"missing_information": error.missing_information},
+        ) from error
+    except EngineeringCalculationError as error:
+        raise APIError(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "INVALID_ENGINEERING_UNIT",
+            "增益曲线输入的工程单位或数值无效。",
+            details={"reason": str(error)},
+        ) from error

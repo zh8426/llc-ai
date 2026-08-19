@@ -17,6 +17,7 @@ export const categoryLabels: Record<string, string> = {
   control: '控制与频率',
   transformer: '变压器',
   evidence_integrity: '依据完整性',
+  fha_gain: 'FHA 增益分析',
 }
 
 export const findingTitleLabels: Record<string, string> = {
@@ -40,6 +41,12 @@ export const findingTitleLabels: Record<string, string> = {
   'LLC-R018': '变压器匝比要求',
   'LLC-R019': '增益评审前置条件',
   'LLC-R020': '依据完整性检查',
+  'LLC-R021': 'FHA 增益模型前置条件',
+  'LLC-R022': '所需增益覆盖能力',
+  'LLC-R023': 'FHA 工作点区域',
+  'LLC-R024': 'FHA 工作频率能力',
+  'LLC-R025': 'FHA 峰值增益信息',
+  'LLC-R026': 'FHA 适用性边界',
 }
 
 export const evidenceSourceLabels: Record<string, string> = {
@@ -64,7 +71,7 @@ const dataLabels: Record<string, string> = {
   cr: '谐振电容 Cr',
   fsw_min: '最低开关频率 Fsw Min',
   fsw_max: '最高开关频率 Fsw Max',
-  transformer_ratio: '变压器匝比',
+  transformer_ratio: '变压器匝比 n = Np / Ns',
   dead_time: '死区时间',
   resonant_frequency: '串联谐振频率 fr',
   lower_resonant_frequency: '低端谐振频率 fp',
@@ -86,6 +93,16 @@ const dataLabels: Record<string, string> = {
   frequency_max: '最高频率',
   output_power_relative_tolerance: '输出功率容差',
   measured_vds_required_margin_ratio: '实测 VDS 裕量要求',
+  available_gain_max: '最大可用 FHA 增益',
+  available_gain_frequency: '最大增益对应频率',
+  required_gain_at_vin_min: 'Vin Min 所需增益',
+  required_gain_at_vin_nom: 'Vin Nom 所需增益',
+  required_gain_at_vin_max: 'Vin Max 所需增益',
+  nominal_tank_gain: '标称 FHA 槽路增益',
+  operating_region_gain: '工作区域对应增益',
+  switching_frequency: '工作开关频率',
+  input_impedance_imaginary: '输入阻抗虚部 Im(Zin)',
+  nominal_normalized_frequency: '标称归一化频率 Fn',
 }
 
 export function dataLabel(name: string): string {

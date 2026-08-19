@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 
 from app.engine.exceptions import EngineeringCalculationError
-from app.engine.units import normalize_positive_quantity
+from app.engine.units import normalize_positive_quantity, normalize_transformer_ratio
 from app.rules.base import ReviewRule
 from app.rules.helpers import (
     insufficient_finding,
@@ -112,9 +112,7 @@ class TransformerRatioRequiredRule(ReviewRule):
                 evidence=(rule_evidence,),
             )
         try:
-            normalize_positive_quantity(
-                name="transformer_ratio", quantity=ratio, target_unit="dimensionless"
-            )
+            normalize_transformer_ratio(ratio)
         except EngineeringCalculationError:
             return insufficient_finding(
                 rule_id=self.rule_id,
@@ -247,4 +245,3 @@ class EvidenceCompletenessRule(ReviewRule):
             evidence=(rule_evidence,),
             requires_engineer_confirmation=False,
         )
-

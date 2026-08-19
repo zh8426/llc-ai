@@ -85,7 +85,7 @@ Frontend
 | --- | --- | --- |
 | Phase 0 | 项目骨架 | Python/FastAPI Backend、React/TypeScript/Vite Frontend、pytest、health check、基础文档 |
 | Phase 1 | LLC 确定性核心计算 | Project Schema、单位处理、`fr`、`fp`、`Zr`、`Lm/Lr`、`Iout`、`Pin` |
-| Phase 2 | Design Review Rule Engine | R001–R020、统一 Finding Schema、Evidence、Missing Information、配置化 Margin |
+| Phase 2 | Design Review Rule Engine | R001–R026、统一 Finding Schema、Evidence、Missing Information、配置化 Margin |
 | Phase 3 | Review API 与 Frontend Workflow | Create Project、输入参数、保存、运行 Review、查看 Findings |
 | Phase 4 | Design Review Report | 基于结构化结果生成 HTML Report，不重复工程计算 |
 | Phase 5 | Waveform Engine | CSV、Schema、单位、边沿、周期、频率、Peak、RMS |
@@ -96,6 +96,10 @@ Frontend
 | Phase 10 | LLM Orchestration | 工具调用、结构化输出、Evidence 约束和不安全结论防护 |
 
 每次只执行一个明确 Phase。当前 Phase 完成并通过测试后停止，不自动开始下一阶段。
+
+### Cross-Phase E1 状态
+
+在 Phase 1–2 的确定性基础上，Cross-Phase E1 已按 E1-A → E1-G 逐步建立 FHA 增益分析：匝比约定、FHA 基础量、复阻抗与单点增益、感性/容性分类、Required Gain 与工作点求解、Operating Envelope 与 R021–R026，以及当前的增益曲线 API、中文前端展示和文档。E1-G 的曲线接口为 `POST /projects/{project_id}/gain-curve`，只读取已保存项目参数并返回带公式版本的结构化点结果。
 
 Evaluation、Safety Policy 和 Deployment 必须按 `MASTER_WORKFLOW.md` 及明确任务单独推进，不得为了演示提前加入认证、支付、云部署或复杂 Agent。
 

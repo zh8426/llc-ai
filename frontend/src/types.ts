@@ -3,6 +3,44 @@ export type EngineeringQuantity = {
   unit: string
 }
 
+export type CalculationResult = {
+  name: string
+  value: number
+  unit: string
+  inputs: Record<string, EngineeringQuantity>
+  formula_version: string
+}
+
+export type ComplexCalculationResult = {
+  name: string
+  real: number
+  imaginary: number
+  magnitude: number
+  unit: string
+  inputs: Record<string, EngineeringQuantity>
+  formula_version: string
+}
+
+export type GainCurvePoint = {
+  switching_frequency: EngineeringQuantity
+  normalized_frequency: CalculationResult
+  tank_gain: CalculationResult
+  input_impedance: ComplexCalculationResult
+  operating_region: 'INDUCTIVE' | 'CAPACITIVE' | 'BOUNDARY'
+}
+
+export type GainCurve = {
+  project_id: string
+  formula_version: string
+  frequency_min: EngineeringQuantity
+  frequency_max: EngineeringQuantity
+  point_count: number
+  resonant_frequency: CalculationResult
+  equivalent_load: CalculationResult
+  quality_factor: CalculationResult
+  points: GainCurvePoint[]
+}
+
 export type Project = {
   id: string
   name: string

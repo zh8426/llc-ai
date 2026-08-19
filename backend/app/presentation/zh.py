@@ -21,6 +21,12 @@ TITLES = {
     "LLC-R018": "变压器匝比要求",
     "LLC-R019": "增益评审前置条件",
     "LLC-R020": "依据完整性检查",
+    "LLC-R021": "FHA 增益模型前置条件",
+    "LLC-R022": "所需增益覆盖能力",
+    "LLC-R023": "工作点区域",
+    "LLC-R024": "工作频率能力",
+    "LLC-R025": "FHA 峰值增益信息",
+    "LLC-R026": "FHA 适用性",
 }
 
 DESCRIPTIONS: dict[tuple[str, Severity], str] = {
@@ -80,6 +86,25 @@ DESCRIPTIONS: dict[tuple[str, Severity], str] = {
     ("LLC-R019", Severity.INSUFFICIENT_DATA): "增益评审前置参数列表未配置或所需参数不完整。",
     ("LLC-R020", Severity.PASS): "所有警告和严重评审项均包含可追溯依据。",
     ("LLC-R020", Severity.WARNING): "一个或多个警告或严重评审项缺少依据，不能进入正式报告。",
+    ("LLC-R021", Severity.INFO): "未请求完整增益评审，因此不检查 FHA 增益模型前置条件。",
+    ("LLC-R021", Severity.PASS): "FHA 增益模型所需参数均已提供且量纲有效。",
+    ("LLC-R021", Severity.INSUFFICIENT_DATA): "FHA 增益模型参数不完整或无效，无法建立工作包络。",
+    ("LLC-R022", Severity.INFO): "未请求完整增益评审，因此不检查所需增益覆盖能力。",
+    ("LLC-R022", Severity.PASS): "扫描到的 FHA 最大可用增益覆盖最小输入电压下的最大所需增益。",
+    ("LLC-R022", Severity.WARNING): "扫描到的 FHA 最大可用增益不足以覆盖最小输入电压下的最大所需增益。",
+    ("LLC-R022", Severity.INSUFFICIENT_DATA): "所需增益覆盖能力无法计算。",
+    ("LLC-R023", Severity.INFO): "未请求完整增益评审，因此不检查 FHA 工作点区域。",
+    ("LLC-R023", Severity.PASS): "标称 FHA 工作点位于感性区域。",
+    ("LLC-R023", Severity.WARNING): "标称 FHA 工作点位于容性区域，需要工程师复核；这不等同于 ZVS 必然失败。",
+    ("LLC-R023", Severity.INSUFFICIENT_DATA): "未找到标称 FHA 工作点，无法判断工作区域。",
+    ("LLC-R024", Severity.INFO): "未请求完整增益评审，因此不检查 FHA 工作频率能力。",
+    ("LLC-R024", Severity.PASS): "标称 FHA 工作频率位于配置的开关频率范围内。",
+    ("LLC-R024", Severity.WARNING): "在配置的开关频率范围内未找到有效的标称 FHA 工作频率。",
+    ("LLC-R024", Severity.INSUFFICIENT_DATA): "FHA 工作频率能力无法计算。",
+    ("LLC-R025", Severity.INFO): "已报告 FHA 峰值增益；本阶段未配置固定的峰值增益裕量阈值。",
+    ("LLC-R025", Severity.INSUFFICIENT_DATA): "FHA 峰值增益信息无法计算。",
+    ("LLC-R026", Severity.INFO): "FHA 结果是模型估计；远离谐振点或存在未建模轻载、寄生条件时，模型精度可能下降。",
+    ("LLC-R026", Severity.INSUFFICIENT_DATA): "缺少有效标称 FHA 工作点，无法评估 FHA 适用性。",
 }
 
 ACTIONS = {
@@ -103,6 +128,12 @@ ACTIONS = {
     "LLC-R018": "补充有效变压器匝比后再进行增益评审。",
     "LLC-R019": "配置项目批准的前置参数列表并补齐所需数据。",
     "LLC-R020": "为被隔离的评审项补充可追溯依据，或移除不受支持的结论。",
+    "LLC-R021": "补充并修正 FHA 增益模型所需的全部参数和单位。",
+    "LLC-R022": "复核谐振腔、变压器匝比和配置的开关频率范围。",
+    "LLC-R023": "复核标称工作点并结合实测开关行为进行工程判断。",
+    "LLC-R024": "复核谐振腔、所需增益和开关频率范围。",
+    "LLC-R025": "结合项目目标和经批准的工程裕量进一步复核峰值增益。",
+    "LLC-R026": "结合实测波形和测试条件确认 FHA 模型适用边界。",
 }
 
 EVIDENCE_DESCRIPTIONS = {

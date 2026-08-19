@@ -343,6 +343,45 @@ h2 {
   font-size: 0.8rem;
 }
 
+.review-request-options {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid #dce8e1;
+  border-radius: 10px;
+  background: #f6faf7;
+}
+
+.checkbox-field {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: #2d5144;
+  font-size: 0.8rem;
+}
+
+.checkbox-field input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: #217c5d;
+}
+
+.checkbox-field span {
+  display: grid;
+  gap: 4px;
+}
+
+.checkbox-field strong {
+  font-weight: 750;
+}
+
+.checkbox-field small {
+  color: #71817c;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(150px, 1fr));
@@ -674,6 +713,151 @@ h2 {
   border-radius: 20px;
   background: #fff;
   box-shadow: 0 16px 44px rgb(31 60 50 / 6%);
+}
+
+.gain-curve-panel {
+  max-width: 1180px;
+  margin: 0 auto 26px;
+  padding: clamp(22px, 3vw, 36px);
+  border: 1px solid #dce3df;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 16px 44px rgb(31 60 50 / 6%);
+}
+
+.gain-curve-panel > .section-note {
+  margin: 16px 0 24px;
+  line-height: 1.7;
+}
+
+.gain-curve-controls {
+  display: flex;
+  gap: 16px;
+  align-items: end;
+}
+
+.gain-curve-controls .field {
+  width: min(260px, 100%);
+}
+
+.gain-curve-controls .field small {
+  color: #778780;
+  font-size: 0.72rem;
+}
+
+.gain-curve-submit {
+  min-height: 43px;
+}
+
+.gain-curve-result {
+  margin-top: 24px;
+  padding-top: 23px;
+  border-top: 1px solid #e6ece8;
+}
+
+.gain-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.gain-summary-grid > div {
+  padding: 13px;
+  border: 1px solid #e0e7e3;
+  border-radius: 10px;
+  background: #fbfdfc;
+}
+
+.gain-summary-grid span,
+.gain-summary-grid strong {
+  display: block;
+}
+
+.gain-summary-grid span {
+  margin-bottom: 6px;
+  color: #708079;
+  font-size: 0.67rem;
+}
+
+.gain-summary-grid strong {
+  color: #25483b;
+  font-size: 0.9rem;
+}
+
+.gain-chart-wrap {
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid #e0e7e3;
+  border-radius: 12px;
+  background: #fbfdfc;
+}
+
+.gain-chart {
+  display: block;
+  width: 100%;
+  min-height: 260px;
+}
+
+.gain-gridline {
+  stroke: #e5ece8;
+  stroke-width: 1;
+}
+
+.gain-axis {
+  stroke: #9aaba3;
+  stroke-width: 1;
+}
+
+.gain-line {
+  fill: none;
+  stroke: #2c8966;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.gain-label,
+.gain-axis-title {
+  fill: #62766c;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.gain-axis-title {
+  font-size: 10px;
+}
+
+.gain-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 8px;
+  color: #687970;
+  font-size: 0.7rem;
+}
+
+.gain-legend span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.gain-legend i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.gain-legend-inductive { background: #238461; }
+.gain-legend-capacitive { background: #ba7045; }
+.gain-legend-boundary { background: #7d6aa9; }
+
+.gain-curve-footnote {
+  margin: 14px 0 0;
+  color: #74847e;
+  font-size: 0.72rem;
+  line-height: 1.6;
 }
 
 .waveform-panel > .section-note {
@@ -1101,7 +1285,8 @@ h2 {
 
   .waveform-controls,
   .waveform-summary-grid,
-  .datasheet-upload {
+  .datasheet-upload,
+  .gain-summary-grid {
     grid-template-columns: repeat(2, minmax(140px, 1fr));
   }
 
@@ -1149,8 +1334,17 @@ h2 {
 
   .waveform-controls,
   .waveform-summary-grid,
-  .datasheet-upload {
+  .datasheet-upload,
+  .gain-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .gain-curve-controls {
+    display: grid;
+  }
+
+  .gain-curve-controls .field {
+    width: 100%;
   }
 
   .waveform-controls .field-wide {

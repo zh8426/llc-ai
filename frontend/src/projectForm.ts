@@ -23,6 +23,8 @@ export type ProjectForm = {
   controllerFmax: string
   powerTolerancePercent: string
   vdsMarginPercent: string
+  zvsAnalysisRequested: boolean
+  fullGainReviewRequested: boolean
 }
 
 export const emptyForm: ProjectForm = {
@@ -48,6 +50,8 @@ export const emptyForm: ProjectForm = {
   controllerFmax: '',
   powerTolerancePercent: '',
   vdsMarginPercent: '',
+  zvsAnalysisRequested: false,
+  fullGainReviewRequested: false,
 }
 
 const quantityText = (quantity: EngineeringQuantity | null): string =>
@@ -88,6 +92,8 @@ export function projectToForm(project: Project): ProjectForm {
       project.review_settings.measured_vds_required_margin_ratio === null
         ? ''
         : (project.review_settings.measured_vds_required_margin_ratio * 100).toString(),
+    zvsAnalysisRequested: project.review_requests.zvs_analysis_requested,
+    fullGainReviewRequested: project.review_requests.full_gain_review_requested,
   }
 }
 
@@ -149,6 +155,10 @@ export function buildPayload(form: ProjectForm): ProjectPayload {
         form.vdsMarginPercent,
         '实测 VDS 裕量',
       ),
+    },
+    review_requests: {
+      zvs_analysis_requested: form.zvsAnalysisRequested,
+      full_gain_review_requested: form.fullGainReviewRequested,
     },
   }
 }

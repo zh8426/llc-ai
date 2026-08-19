@@ -4,7 +4,7 @@ import QuantityField from './QuantityField'
 type ProjectEditorProps = {
   form: ProjectForm
   busy: boolean
-  onUpdateForm: (field: keyof ProjectForm, value: string) => void
+  onUpdateForm: (field: keyof ProjectForm, value: string | boolean) => void
   onSave: () => void
   onSaveAndRunReview: () => void
 }
@@ -68,7 +68,7 @@ export default function ProjectEditor({
           <QuantityField label="最低开关频率 Fsw Min" unit="kHz" value={form.fswMin} onChange={(value) => onUpdateForm('fswMin', value)} disabled={busy} />
           <QuantityField label="标称开关频率 Fsw Nom" unit="kHz" value={form.fswNom} onChange={(value) => onUpdateForm('fswNom', value)} disabled={busy} />
           <QuantityField label="最高开关频率 Fsw Max" unit="kHz" value={form.fswMax} onChange={(value) => onUpdateForm('fswMax', value)} disabled={busy} />
-          <QuantityField label="变压器匝比" unit="ratio" value={form.transformerRatio} onChange={(value) => onUpdateForm('transformerRatio', value)} disabled={busy} />
+          <QuantityField label="变压器匝比 n = Np / Ns" unit="ratio" value={form.transformerRatio} onChange={(value) => onUpdateForm('transformerRatio', value)} disabled={busy} />
         </div>
       </div>
 
@@ -99,6 +99,20 @@ export default function ProjectEditor({
         <div className="form-grid">
           <QuantityField label="输出功率容差" unit="%" value={form.powerTolerancePercent} onChange={(value) => onUpdateForm('powerTolerancePercent', value)} disabled={busy} />
           <QuantityField label="实测 VDS 裕量" unit="%" value={form.vdsMarginPercent} onChange={(value) => onUpdateForm('vdsMarginPercent', value)} disabled={busy} />
+        </div>
+        <div className="review-request-options">
+          <label className="checkbox-field">
+            <input
+              type="checkbox"
+              checked={form.fullGainReviewRequested}
+              onChange={(event) => onUpdateForm('fullGainReviewRequested', event.target.checked)}
+              disabled={busy}
+            />
+            <span>
+              <strong>启用完整 FHA 增益评审（R021–R026）</strong>
+              <small>启用后重新评审时，系统会计算 FHA 工作包络、所需增益和工作点；不会自动给出安全结论。</small>
+            </span>
+          </label>
         </div>
       </div>
     </section>

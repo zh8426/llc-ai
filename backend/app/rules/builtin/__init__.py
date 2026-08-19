@@ -1,4 +1,4 @@
-"""Built-in Phase 2 review rules R001 through R020."""
+"""Built-in review rules R001 through R026."""
 
 from app.rules.builtin.calculation_rules import (
     CharacteristicImpedanceRule,
@@ -15,6 +15,14 @@ from app.rules.builtin.component_rules import (
     MOSFETStaticVoltageScreeningRule,
     ResonantCapacitorRMSCurrentRule,
     ResonantCapacitorVoltageRatingRule,
+)
+from app.rules.builtin.gain_rules import (
+    FHAApplicabilityRule,
+    FrequencyCapabilityRule,
+    GainModelPrerequisitesRule,
+    GainPeakMarginRule,
+    OperatingPointRegionRule,
+    RequiredGainCoverageRule,
 )
 from app.rules.builtin.input_rules import (
     CriticalParameterCompletenessRule,
@@ -35,7 +43,11 @@ __all__ = [
     "CriticalParameterCompletenessRule",
     "DeadTimeInformationRule",
     "EvidenceCompletenessRule",
+    "FHAApplicabilityRule",
+    "FrequencyCapabilityRule",
     "GainReviewPrerequisiteRule",
+    "GainModelPrerequisitesRule",
+    "GainPeakMarginRule",
     "InductanceRatioObservationRule",
     "InputVoltageOrderingRule",
     "LowerResonantFrequencyCalculationRule",
@@ -43,12 +55,13 @@ __all__ = [
     "MOSFETMeasuredPeakVoltageRule",
     "MOSFETStaticVoltageScreeningRule",
     "OutputPowerConsistencyRule",
+    "OperatingPointRegionRule",
     "PositiveValuesRule",
     "ResonantCapacitorRMSCurrentRule",
     "ResonantCapacitorVoltageRatingRule",
     "ResonantFrequencyCalculationRule",
     "ResonantFrequencyOperatingRangeRule",
+    "RequiredGainCoverageRule",
     "SwitchingFrequencyOrderingRule",
     "TransformerRatioRequiredRule",
 ]
-

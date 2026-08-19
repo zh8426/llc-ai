@@ -60,14 +60,16 @@ async def test_review_api_runs_persists_and_returns_latest_review(
     review = run_response.json()
     assert calculation_calls == 1
     assert review["summary"] == {
-        "pass": 13,
-        "info": 7,
+        "pass": 17,
+        "info": 9,
         "warning": 0,
         "critical": 0,
         "insufficient_data": 0,
     }
     assert [finding["rule_id"] for finding in review["findings"]] == [
-        f"LLC-R{number:03d}" for number in range(1, 21)
+        *(f"LLC-R{number:03d}" for number in range(1, 20)),
+        *(f"LLC-R{number:03d}" for number in range(21, 27)),
+        "LLC-R020",
     ]
     for finding in review["findings"]:
         assert_user_facing_finding_is_localized(finding)

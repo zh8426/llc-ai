@@ -111,7 +111,7 @@ TOOL_DEFINITIONS: tuple[ToolDefinition, ...] = (
     ),
     ToolDefinition(
         "run_design_review",
-        "Run the deterministic R001-R020 review without persisting a new review run.",
+        "Run the deterministic R001-R026 review without persisting a new review run.",
         ProjectToolInput,
     ),
     ToolDefinition(
