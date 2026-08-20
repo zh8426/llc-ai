@@ -131,6 +131,7 @@ export function useProjectWorkspace() {
 
   async function deleteSelectedProject() {
     if (selectedProject === null) return
+    const deletedProjectId = selectedProject.id
     const projectName = selectedProject.name
     if (!window.confirm(`确定删除项目“${projectName}”吗？该项目的评审历史也会被删除。`)) {
       return
@@ -138,14 +139,53 @@ export function useProjectWorkspace() {
     setBusy(true)
     setError('')
     try {
-      await deleteProject(selectedProject.id)
-      const remaining = await listProjects()
+      await deleteProject(deletedProjectId)
+
+      // DELETE is already committed at this point. Keep the local state truthful
+      // even if a subsequent refresh request fails.
+      setProjects((current) =>
+        current.filter((project) => project.id !== deletedProjectId),
+      )
+      setSelectedProject(null)
+      setForm(emptyForm)
+      setReview(null)
+      setNotice('项目已删除，正在刷新项目列表…')
+
+      let remaining: Project[]
+      try {
+        remaining = await listProjects()
+      } catch (reason) {
+        setError(
+          reason instanceof Error
+            ? `项目已删除，但项目列表刷新失败：${reason.message}`
+            : '项目已删除，但项目列表刷新失败，请刷新页面。',
+        )
+        setNotice('项目已删除，请刷新页面确认最新项目列表。')
+        return
+      }
+
       setProjects(remaining)
       const nextProject = remaining[0] ?? null
       setSelectedProject(nextProject)
       setForm(nextProject === null ? emptyForm : projectToForm(nextProject))
-      setReview(nextProject === null ? null : await getLatestReview(nextProject.id))
-      setNotice(nextProject === null ? '项目已删除，可以创建新项目。' : '项目已删除，已切换到下一个项目。')
+      if (nextProject === null) {
+        setReview(null)
+        setNotice('项目已删除，可以创建新项目。')
+        return
+      }
+
+      try {
+        setReview(await getLatestReview(nextProject.id))
+        setNotice('项目已删除，已切换到下一个项目。')
+      } catch (reason) {
+        setReview(null)
+        setNotice('项目已删除，已切换到下一个项目。')
+        setError(
+          reason instanceof Error
+            ? `项目已删除，但新项目评审加载失败：${reason.message}`
+            : '项目已删除，但新项目评审加载失败，请稍后重试。',
+        )
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '项目删除失败。')
     } finally {
