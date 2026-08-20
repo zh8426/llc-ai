@@ -60,9 +60,9 @@ async def test_review_api_runs_persists_and_returns_latest_review(
     review = run_response.json()
     assert calculation_calls == 1
     assert review["summary"] == {
-        "pass": 17,
+        "pass": 16,
         "info": 9,
-        "warning": 0,
+        "warning": 1,
         "critical": 0,
         "insufficient_data": 0,
     }

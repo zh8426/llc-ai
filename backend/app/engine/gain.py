@@ -22,7 +22,7 @@ OUTPUT_RESISTANCE_FORMULA_VERSION: Final = "LLC-RO-FHA-V1"
 EQUIVALENT_LOAD_FORMULA_VERSION: Final = "LLC-RE-FHA-V1"
 QUALITY_FACTOR_FORMULA_VERSION: Final = "LLC-QE-FHA-V1"
 NORMALIZED_FREQUENCY_FORMULA_VERSION: Final = "LLC-FN-FHA-V1"
-REQUIRED_GAIN_FORMULA_VERSION: Final = "LLC-MREQ-FHA-V1"
+REQUIRED_GAIN_FORMULA_VERSION: Final = "LLC-MREQ-FHA-V2"
 INPUT_IMPEDANCE_FORMULA_VERSION: Final = "LLC-ZIN-FHA-V1"
 FHA_GAIN_FORMULA_VERSION: Final = "LLC-GAIN-FHA-V1"
 GAIN_CURVE_FORMULA_VERSION: Final = "LLC-GAIN-CURVE-FHA-V1"
@@ -169,14 +169,16 @@ def calculate_required_gain(
     vout: EngineeringQuantity,
     transformer_ratio: EngineeringQuantity,
 ) -> CalculationResult:
-    """Calculate half-bridge required gain ``Mreq = Vin / (2 n Vout)``."""
+    """Calculate half-bridge required gain ``Mreq = 2 n Vout / Vin``."""
 
     normalized_vin = normalize_positive_quantity(name="vin", quantity=vin, target_unit="V")
     normalized_vout = normalize_positive_quantity(
         name="vout", quantity=vout, target_unit="V"
     )
     normalized_ratio = normalize_transformer_ratio(transformer_ratio)
-    value = normalized_vin.value / (2.0 * normalized_ratio.value * normalized_vout.value)
+    value = (
+        2.0 * normalized_ratio.value * normalized_vout.value / normalized_vin.value
+    )
     return build_calculation_result(
         name="required_gain",
         value=value,

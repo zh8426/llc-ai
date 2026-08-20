@@ -241,7 +241,7 @@ class RequiredGainCoverageRule(ReviewRule):
         evidence = _gain_rule_evidence(
             self.rule_id,
             context,
-            "R022 compares available maximum FHA gain with the maximum required gain at Vin Min.",
+            "R022 compares available inductive-region FHA gain with the maximum required gain at Vin Min.",
         )
         if envelope is None:
             return insufficient_finding(
@@ -255,10 +255,36 @@ class RequiredGainCoverageRule(ReviewRule):
             )
         evidence = (
             *evidence,
-            calculation_evidence(envelope.available_gain_max, "Available FHA maximum gain."),
             calculation_evidence(
                 envelope.required_gain_at_vin_min,
                 "Maximum required gain at Vin Min.",
+            ),
+        )
+        if envelope.available_gain_max is None:
+            return Finding(
+                rule_id=self.rule_id,
+                category=self.category,
+                severity=Severity.WARNING,
+                title=self.title,
+                description=(
+                    "No inductive FHA point exists in the scanned frequency range, "
+                    "so required-gain coverage is not available."
+                ),
+                evidence=evidence,
+                calculated_values={
+                    "required_gain_at_vin_min": envelope.required_gain_at_vin_min,
+                },
+                recommended_action=(
+                    "Review the resonant tank, transformer ratio, and configured frequency range.",
+                ),
+                requires_engineer_confirmation=False,
+            )
+        assert envelope.available_gain_frequency is not None
+        evidence = (
+            *evidence,
+            calculation_evidence(
+                envelope.available_gain_max,
+                "Available inductive-region FHA maximum gain.",
             ),
         )
         covered = envelope.available_gain_max.value >= envelope.required_gain_at_vin_min.value
@@ -268,9 +294,9 @@ class RequiredGainCoverageRule(ReviewRule):
             severity=Severity.PASS if covered else Severity.WARNING,
             title=self.title,
             description=(
-                "Available FHA gain covers the maximum required gain in the scanned frequency range."
+                "Available inductive-region FHA gain covers the maximum required gain in the scanned frequency range."
                 if covered
-                else "Available FHA gain does not cover the maximum required gain in the scanned frequency range."
+                else "Available inductive-region FHA gain does not cover the maximum required gain in the scanned frequency range."
             ),
             evidence=evidence,
             calculated_values={
@@ -485,13 +511,34 @@ class GainPeakMarginRule(ReviewRule):
                 recommended_action=("Complete and correct the FHA gain model inputs.",),
                 evidence=evidence,
             )
-        evidence = (*evidence, calculation_evidence(envelope.available_gain_max, "FHA peak gain."))
+        if (
+            envelope.available_gain_max is None
+            or envelope.available_gain_frequency is None
+        ):
+            return insufficient_finding(
+                rule_id=self.rule_id,
+                category=self.category,
+                title=self.title,
+                description="No inductive FHA gain peak exists in the scanned frequency range.",
+                missing_information=("inductive_fha_gain_point",),
+                recommended_action=(
+                    "Review the resonant tank and configured frequency range.",
+                ),
+                evidence=evidence,
+            )
+        evidence = (
+            *evidence,
+            calculation_evidence(
+                envelope.available_gain_max,
+                "Available inductive-region FHA peak gain.",
+            ),
+        )
         return Finding(
             rule_id=self.rule_id,
             category=self.category,
             severity=Severity.INFO,
             title=self.title,
-            description="FHA peak gain is reported for engineering review; no hard-coded gain-margin threshold is applied.",
+            description="The inductive-region FHA peak gain is reported for engineering review; no hard-coded gain-margin threshold is applied.",
             evidence=evidence,
             calculated_values={
                 "available_gain_max": envelope.available_gain_max,

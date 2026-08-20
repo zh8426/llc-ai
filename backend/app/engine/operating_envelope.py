@@ -22,8 +22,8 @@ from app.schemas.engineering import (
     OperatingEnvelopeResult,
 )
 
-OPERATING_ENVELOPE_FORMULA_VERSION: Final = "LLC-OPERATING-ENVELOPE-FHA-V1"
-AVAILABLE_GAIN_FORMULA_VERSION: Final = "LLC-AVAILABLE-GAIN-FHA-V1"
+OPERATING_ENVELOPE_FORMULA_VERSION: Final = "LLC-OPERATING-ENVELOPE-FHA-V2"
+AVAILABLE_GAIN_FORMULA_VERSION: Final = "LLC-AVAILABLE-GAIN-FHA-V2"
 ENVELOPE_SCAN_POINTS: Final = 2049
 
 
@@ -52,7 +52,7 @@ def calculate_operating_envelope(
     fsw_min: EngineeringQuantity,
     fsw_max: EngineeringQuantity,
 ) -> OperatingEnvelopeResult:
-    """Calculate available FHA gain and operating points for Vin min/nom/max."""
+    """Calculate inductive-region FHA gain and operating points for Vin min/nom/max."""
 
     normalized_lr = normalize_positive_quantity(name="lr", quantity=lr, target_unit="H")
     normalized_lm = normalize_positive_quantity(name="lm", quantity=lm, target_unit="H")
@@ -144,16 +144,21 @@ def calculate_operating_envelope(
             operating_region=region.operating_region,
             input_impedance=input_impedance,
         )
-        if peak_point is None or point.tank_gain.value > peak_point.tank_gain.value:
+        if point.operating_region == "INDUCTIVE" and (
+            peak_point is None or point.tank_gain.value > peak_point.tank_gain.value
+        ):
             peak_point = point
 
-    assert peak_point is not None
-    available_gain_max = build_calculation_result(
-        name="available_gain_max",
-        value=peak_point.tank_gain.value,
-        unit="dimensionless",
-        inputs=peak_point.tank_gain.inputs,
-        formula_version=AVAILABLE_GAIN_FORMULA_VERSION,
+    available_gain_max = (
+        None
+        if peak_point is None
+        else build_calculation_result(
+            name="available_gain_max",
+            value=peak_point.tank_gain.value,
+            unit="dimensionless",
+            inputs=peak_point.tank_gain.inputs,
+            formula_version=AVAILABLE_GAIN_FORMULA_VERSION,
+        )
     )
     operating_points = {
         "vin_min": solve_operating_frequency(
@@ -197,7 +202,9 @@ def calculate_operating_envelope(
         resonant_frequency=resonant_frequency,
         quality_factor=quality_factor,
         available_gain_max=available_gain_max,
-        available_gain_frequency=peak_point.switching_frequency,
+        available_gain_frequency=(
+            None if peak_point is None else peak_point.switching_frequency
+        ),
         peak_point=peak_point,
         required_gain_at_vin_min=required_gain_at_vin_min,
         required_gain_at_vin_nom=required_gain_at_vin_nom,

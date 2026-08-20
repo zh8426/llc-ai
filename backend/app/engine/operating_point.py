@@ -22,7 +22,7 @@ from app.schemas.engineering import (
     OperatingPointResult,
 )
 
-OPERATING_POINT_FORMULA_VERSION: Final = "LLC-OPERATING-POINT-FHA-V1"
+OPERATING_POINT_FORMULA_VERSION: Final = "LLC-OPERATING-POINT-FHA-V2"
 SOLVER_SCAN_POINTS: Final = 2049
 SOLVER_BISECTION_ITERATIONS: Final = 80
 # Numerical tolerances below are solver convergence settings, not engineering margins.

@@ -52,9 +52,9 @@ def test_normal_context_returns_twenty_six_eligible_findings(
     assert len(result.findings) == 26
     assert result.excluded_findings == ()
     assert result.summary.model_dump(by_alias=True) == {
-        "pass": 17,
+        "pass": 16,
         "info": 9,
-        "warning": 0,
+        "warning": 1,
         "critical": 0,
         "insufficient_data": 0,
     }

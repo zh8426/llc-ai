@@ -108,7 +108,7 @@ class OperatingPointResult(BaseModel):
 
 
 class OperatingEnvelopePoint(BaseModel):
-    """One deterministic point retained for the FHA envelope peak."""
+    """One deterministic point retained for the available inductive FHA peak."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -129,9 +129,9 @@ class OperatingEnvelopeResult(BaseModel):
     frequency_max: EngineeringQuantity
     resonant_frequency: CalculationResult
     quality_factor: CalculationResult
-    available_gain_max: CalculationResult
-    available_gain_frequency: EngineeringQuantity
-    peak_point: OperatingEnvelopePoint
+    available_gain_max: CalculationResult | None = None
+    available_gain_frequency: EngineeringQuantity | None = None
+    peak_point: OperatingEnvelopePoint | None = None
     required_gain_at_vin_min: CalculationResult
     required_gain_at_vin_nom: CalculationResult
     required_gain_at_vin_max: CalculationResult

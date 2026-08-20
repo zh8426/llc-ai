@@ -20,16 +20,22 @@ def update_project(context: ReviewContext, **changes: object) -> ReviewContext:
     )
 
 
-def test_gain_rules_report_normal_envelope(
+def test_gain_rules_report_covered_inductive_envelope(
     normal_review_context: ReviewContext,
 ) -> None:
+    context = update_project(
+        normal_review_context,
+        lm=quantity(150, "uH"),
+        fsw_min=quantity(50, "kHz"),
+        fsw_max=quantity(180, "kHz"),
+    )
     findings = (
-        GainModelPrerequisitesRule().evaluate(normal_review_context),
-        RequiredGainCoverageRule().evaluate(normal_review_context),
-        OperatingPointRegionRule().evaluate(normal_review_context),
-        FrequencyCapabilityRule().evaluate(normal_review_context),
-        GainPeakMarginRule().evaluate(normal_review_context),
-        FHAApplicabilityRule().evaluate(normal_review_context),
+        GainModelPrerequisitesRule().evaluate(context),
+        RequiredGainCoverageRule().evaluate(context),
+        OperatingPointRegionRule().evaluate(context),
+        FrequencyCapabilityRule().evaluate(context),
+        GainPeakMarginRule().evaluate(context),
+        FHAApplicabilityRule().evaluate(context),
     )
 
     assert [finding.severity for finding in findings] == [
@@ -41,6 +47,37 @@ def test_gain_rules_report_normal_envelope(
         Severity.INFO,
     ]
     assert all(finding.evidence for finding in findings)
+
+
+def test_required_gain_coverage_warns_when_low_line_gain_is_not_covered(
+    normal_review_context: ReviewContext,
+) -> None:
+    finding = RequiredGainCoverageRule().evaluate(normal_review_context)
+
+    assert finding.severity == Severity.WARNING
+    assert (
+        finding.calculated_values["available_gain_max"].value
+        < finding.calculated_values["required_gain_at_vin_min"].value
+    )
+
+
+def test_gain_rules_do_not_use_capacitive_peak_as_available_gain(
+    normal_review_context: ReviewContext,
+) -> None:
+    context = update_project(
+        normal_review_context,
+        fsw_min=quantity(40, "kHz"),
+        fsw_max=quantity(60, "kHz"),
+    )
+
+    coverage = RequiredGainCoverageRule().evaluate(context)
+    peak = GainPeakMarginRule().evaluate(context)
+
+    assert coverage.severity == Severity.WARNING
+    assert "inductive" in coverage.description
+    assert "available_gain_max" not in coverage.calculated_values
+    assert peak.severity == Severity.INSUFFICIENT_DATA
+    assert peak.missing_information == ("inductive_fha_gain_point",)
 
 
 def test_gain_prerequisite_rule_is_insufficient_when_requested_inputs_are_missing(

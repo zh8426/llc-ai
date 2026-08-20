@@ -38,11 +38,40 @@ def test_required_gain_matches_half_bridge_definition() -> None:
     )
 
     assert result.name == "required_gain"
-    assert result.value == pytest.approx(400 / (2 * 4.17 * 48))
+    assert result.value == pytest.approx(2 * 4.17 * 48 / 400)
     assert result.unit == "dimensionless"
-    assert result.formula_version == REQUIRED_GAIN_FORMULA_VERSION == "LLC-MREQ-FHA-V1"
+    assert result.formula_version == REQUIRED_GAIN_FORMULA_VERSION == "LLC-MREQ-FHA-V2"
     assert result.inputs["vin"].unit == "V"
     assert result.inputs["transformer_ratio"].unit == "dimensionless"
+
+
+def test_required_gain_normalizes_voltage_units() -> None:
+    result = calculate_required_gain(
+        vin=quantity(0.3, "kV"),
+        vout=quantity(0.048, "kV"),
+        transformer_ratio=quantity(4, "dimensionless"),
+    )
+
+    assert result.value == pytest.approx(1.28)
+    assert result.inputs["vin"] == quantity(300, "V")
+    assert result.inputs["vout"] == quantity(48, "V")
+
+
+def test_required_gain_increases_when_input_voltage_decreases() -> None:
+    low_line = calculate_required_gain(
+        vin=quantity(300, "V"),
+        vout=quantity(48, "V"),
+        transformer_ratio=quantity(4, "dimensionless"),
+    )
+    high_line = calculate_required_gain(
+        vin=quantity(420, "V"),
+        vout=quantity(48, "V"),
+        transformer_ratio=quantity(4, "dimensionless"),
+    )
+
+    assert low_line.value == pytest.approx(1.28)
+    assert high_line.value == pytest.approx(32 / 35)
+    assert low_line.value > high_line.value
 
 
 def test_solver_retains_capacitive_and_inductive_roots_and_selects_inductive() -> None:
@@ -50,7 +79,11 @@ def test_solver_retains_capacitive_and_inductive_roots_and_selects_inductive() -
 
     assert result.status == "VALID"
     assert result.model == "FHA"
-    assert result.formula_version == OPERATING_POINT_FORMULA_VERSION
+    assert (
+        result.formula_version
+        == OPERATING_POINT_FORMULA_VERSION
+        == "LLC-OPERATING-POINT-FHA-V2"
+    )
     assert len(result.candidates) == 2
     assert [candidate.operating_region for candidate in result.candidates] == [
         "CAPACITIVE",
