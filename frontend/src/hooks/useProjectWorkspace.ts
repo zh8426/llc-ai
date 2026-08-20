@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import {
   createProject,
@@ -25,12 +25,14 @@ export function useProjectWorkspace() {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('正在连接后端服务…')
   const [error, setError] = useState('')
+  const reviewRequestSequence = useRef(0)
 
   useEffect(() => {
     let active = true
+    const requestId = ++reviewRequestSequence.current
     void listProjects()
       .then(async (items) => {
-        if (!active) return
+        if (!active || requestId !== reviewRequestSequence.current) return
         setProjects(items)
         if (items.length === 0) {
           setNotice('新建一个项目后即可开始设计评审。')
@@ -39,11 +41,13 @@ export function useProjectWorkspace() {
         const first = items[0]
         setSelectedProject(first)
         setForm(projectToForm(first))
-        setReview(await getLatestReview(first.id))
+        const latestReview = await getLatestReview(first.id)
+        if (!active || requestId !== reviewRequestSequence.current) return
+        setReview(latestReview)
         setNotice('项目已加载。')
       })
       .catch((reason: unknown) => {
-        if (!active) return
+        if (!active || requestId !== reviewRequestSequence.current) return
         setError(reason instanceof Error ? reason.message : '无法连接后端服务。')
         setNotice('请确认后端服务已在 127.0.0.1:8000 启动。')
       })
@@ -57,15 +61,19 @@ export function useProjectWorkspace() {
   }
 
   async function openProject(project: Project) {
+    const requestId = ++reviewRequestSequence.current
     setSelectedProject(project)
     setForm(projectToForm(project))
     setReview(null)
     setError('')
     setNotice('正在加载最近一次评审…')
     try {
-      setReview(await getLatestReview(project.id))
+      const latestReview = await getLatestReview(project.id)
+      if (requestId !== reviewRequestSequence.current) return
+      setReview(latestReview)
       setNotice('项目已加载。')
     } catch (reason) {
+      if (requestId !== reviewRequestSequence.current) return
       setError(reason instanceof Error ? reason.message : '评审加载失败。')
     }
   }
