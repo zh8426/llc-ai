@@ -1,5 +1,7 @@
 # REST API
 
+> 本文记录已存在的 V1 接口。V2 `/api/v2` 仅是 [V2_DESIGN.md](V2_DESIGN.md) 第 9 节的目标契约，T01 没有新增这些路由。当前任务见 [MASTER_WORKFLOW.md](MASTER_WORKFLOW.md)。
+
 Phase 3–10 提供 Project 持久化、六项确定性计算、R001–R026 Design Review、FHA 增益曲线、ZVS 波形分析、MOSFET Datasheet MVP、Verified FaultCase、确定性 Fault Diagnosis 和受约束的 LLM Engineering Orchestration API。默认地址为 `http://127.0.0.1:8000`，交互文档位于 `/docs`。
 
 所有 Engineering Quantity 都使用显式结构：

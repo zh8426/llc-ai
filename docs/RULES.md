@@ -1,6 +1,8 @@
 # Review Rules
 
-本文定义 Phase 2 的确定性 LLC Design Review Rule Engine。规则依据为 `docs/MASTER_WORKFLOW.md` 第 12–13 节。
+> 本文记录现有 V1 规则，不把它们直接当成 V2 的完整设计检查。V2 按 [MASTER_WORKFLOW.md](MASTER_WORKFLOW.md) 逐条迁移，并保留适用范围和证据。
+
+本文定义 Phase 2 的确定性 LLC Design Review Rule Engine。早期规则依据为 [V1 历史主线](history/V1_MASTER_WORKFLOW.md) 第 12–13 节。
 
 ## Finding Contract
 
@@ -45,7 +47,7 @@ rule_definition
 verified_fault_case
 ```
 
-当前 Phase 2 尚未实现 Datasheet Parser 或 Waveform Engine，因此器件额定值和用户声明的测量值仍标记为 `user_input`，不得描述为系统已验证的数据手册或波形证据。
+现有 V1 的 Project → ReviewContext 映射仍使用项目录入值；即使手册和波形模块已经存在，未建立来源关联的额定值和用户声明测量仍应标记为 `user_input`，不得描述为系统已核验的手册或波形证据。
 
 R012–R015 的用户声明应力值还会保存最小 `MeasurementEvidence`：
 

@@ -1,107 +1,59 @@
 # LLC Engineering Assistant
 
-面向专业电力电子工程师的 **Half-Bridge LLC Design Review & Troubleshooting Assistant**。
+面向专业电力电子工程师的半桥 LLC 设计与验证工作台。
 
-本项目的长期目标是把结构化工程数据、确定性计算、工程规则、实测波形和已验证故障案例组织成可追溯的研发辅助系统。LLM 只作为后期的编排与解释层，不替代工程计算、规则判断或工程师确认。
+**当前状态：V2 文档契约已建立，运行时代码仍为 V1。** 本次 T01 不新增计算功能、页面、API 或数据库迁移。下方本地启动与测试命令继续适用于现有 V1。
 
-`docs/MASTER_WORKFLOW.md` 是开发范围与 Phase 顺序的主要依据；`AGENTS.md` 定义代码、测试、文档和安全约束。
+## V2 产品主线
+
+首个可用版本 M1 的目标：**规格 → 候选谐振腔 → 多工况检查 → 方案比较 → 设计版本 → 计算书**。
+
+数学与波形算法经验证后复用；产品流程、版本/工况数据模型和业务编排按新主线重建。目标、估算与实测分别保存，修改设计后保留旧报告并明确需要重新验证的结果。
+
+| 文档 | 用途 |
+|---|---|
+| [V2 设计说明](docs/V2_DESIGN.md) | 数据模型、页面、模块边界、API 草案、迁移和验收 |
+| [当前开发主线](docs/MASTER_WORKFLOW.md) | M0–M4、T01–T10、当前任务与下一项范围 |
+| [Agent 规范](AGENTS.md) | 单位、证据、测试、范围和工作流程 |
+| [工程假设](docs/DOMAIN_ASSUMPTIONS.md) | V1 实现与 V2 目标模型的定义和边界 |
+| [V1 历史主线](docs/history/V1_MASTER_WORKFLOW.md) | 原 Phase 0–10，只作为历史参考 |
 
 ## Product Scope
 
-第一版产品范围：
+现有 V1 定位：Half-Bridge LLC、300–1000 W、300–420 VDC、24 V / 48 V、变频控制、硅 MOSFET、二极管整流。
 
-- 拓扑：Half-Bridge LLC
-- 功率：300–1000 W
-- 输入：300–420 VDC
-- 输出：24 V / 48 V
-- 控制：Variable Frequency Control
-- 主开关：Silicon MOSFET
-- 整流：Diode Rectification
+V2 M1 目标进一步固定为中心抽头二极管整流、单输出、理想稳态 FHA 与正负载，`n = Np / Ns_half`。这不自动改变 V1 参数含义；旧项目的副边连接不能由“Diode Rectification”反推。
 
-未经明确授权，不扩展到 Full-Bridge LLC、CLLC、双向、交错、多相或其他谐振拓扑。
+全桥、CLLC、双向、交错、多相以及其他拓扑不在首版范围。磁件、器件/BOM、损耗热、控制、仿真、测试和设计发布按后续里程碑推进，不表示这些能力已经可用。
 
 ## Engineering Principles
 
-工程分析优先级：
-
-```text
-Deterministic Engineering Calculation
->
-Engineering Rule
->
-Measured Waveform Evidence
->
-Verified Engineering Case
->
-LLM Interpretation
-```
-
-核心原则：
-
-- 可以由程序确定性计算的结果不得交给 LLM 猜测。
-- 所有工程量必须显式携带单位，计算内部统一使用 SI。
-- 计算结果必须结构化、可测试、可重复，并包含公式版本。
-- WARNING / CRITICAL 必须有 Evidence。
-- 缺少必要数据时返回 `INSUFFICIENT_DATA`，不得静默补值。
-- 仿真、估算和测量必须明确区分。
-- 系统是 Engineering Assistance Tool，不是 Safety Authority。
-
-## Target Architecture
-
-```text
-User Input
-  → Structured Engineering Data
-  → Deterministic Calculation Engine
-  → Engineering Rule Engine
-  → Waveform Analysis Engine
-  → Datasheet / Evidence Retrieval
-  → Verified Fault Cases
-  → Fault Diagnosis Orchestration
-  → LLM Orchestration and Explanation
-  → Structured Report
-```
-
-各层必须保持职责分离：
-
-```text
-API
-Domain Model
-Engineering Engine
-Rule Engine
-Waveform Engine
-Datasheet Parser
-Persistence
-Fault Diagnosis
-LLM Orchestration
-Reporting
-Frontend
-```
-
-即使网络、LLM 或 AI Provider 不可用，确定性计算、设计评审、规则执行、波形分析和基础报告仍应能够独立运行。
+- 确定性计算、规则与信号处理由程序执行，LLM 只调用工具并解释结果。
+- 所有工程量显式携带单位，内部统一 SI；结果包含输入和公式/模型版本。
+- WARNING / CRITICAL 必须有 Evidence，工程裕量有明确来源。
+- 缺输入、模型不适用、功能未实现和检查失败分别表达，不静默补值。
+- 分析、仿真、测量、参考和合成数据分开记录。
+- 计算与实测冲突时检查工况、模型和测量不确定度，不按固定来源排序自动判真伪。
+- 报告消费固定运行的结构化结果，不重新计算；系统不是 Safety Authority。
+- 网络、LLM 或 AI Provider 不可用时，核心计算、评审、波形和报告仍能独立运行。
 
 ## Development Roadmap
 
-| Phase | 目标 | 主要交付物 |
-| --- | --- | --- |
-| Phase 0 | 项目骨架 | Python/FastAPI Backend、React/TypeScript/Vite Frontend、pytest、health check、基础文档 |
-| Phase 1 | LLC 确定性核心计算 | Project Schema、单位处理、`fr`、`fp`、`Zr`、`Lm/Lr`、`Iout`、`Pin` |
-| Phase 2 | Design Review Rule Engine | R001–R026、统一 Finding Schema、Evidence、Missing Information、配置化 Margin |
-| Phase 3 | Review API 与 Frontend Workflow | Create Project、输入参数、保存、运行 Review、查看 Findings |
-| Phase 4 | Design Review Report | 基于结构化结果生成 HTML Report，不重复工程计算 |
-| Phase 5 | Waveform Engine | CSV、Schema、单位、边沿、周期、频率、Peak、RMS |
-| Phase 6 | ZVS Check | Dead Time、VDS at Turn-On、Evidence Cycles、保守分类结果 |
-| Phase 7 | Datasheet Infrastructure | MOSFET 参数提取、测试条件、来源页、Confidence、Human Verification |
-| Phase 8 | Verified Fault Cases | 结构化 FaultCase、CRUD、筛选和相似案例基础设施 |
-| Phase 9 | Deterministic Fault Diagnosis | Top 3 Candidate Causes、正反证据、缺失信息、下一步测量 |
-| Phase 10 | LLM Orchestration | 工具调用、结构化输出、Evidence 约束和不安全结论防护 |
+| 里程碑 | 目标 | 当前状态 |
+|---|---|---|
+| M0 | 文档契约、版本、工况与搜索配置基础 | T01 文档交付；T02–T03 未实现 |
+| M1 | 规格到候选方案与计算书 | T04–T10 未实现 |
+| M2 | 应力、磁件、器件/BOM、损耗热与控制约束 | 规划 |
+| M3 | 仿真、实测、偏差分析和问题复测 | 规划 |
+| M4 | 发布包、生产测试与核验案例 | 规划 |
 
-每次只执行一个明确 Phase。当前 Phase 完成并通过测试后停止，不自动开始下一阶段。
+每次执行一个明确任务，完成后报告和停止。当前任务、依赖和验收以 [MASTER_WORKFLOW.md](docs/MASTER_WORKFLOW.md) 为准；旧 Phase 不再决定新开发顺序。
 
-### Cross-Phase E1 状态
+## Existing V1 Capabilities
 
-在 Phase 1–2 的确定性基础上，Cross-Phase E1 已按 E1-A → E1-G 逐步建立 FHA 增益分析：匝比约定、FHA 基础量、复阻抗与单点增益、感性/容性分类、Required Gain 与工作点求解、Operating Envelope 与 R021–R026，以及当前的增益曲线 API、中文前端展示和文档。E1-G 的曲线接口为 `POST /projects/{project_id}/gain-curve`，只读取已保存项目参数并返回带公式版本的结构化点结果。
+现有程序提供项目参数与设计评审、HTML 报告、FHA 增益曲线、CSV 波形/ZVS 分析、MOSFET 手册候选、案例检索与受约束的 LLM 编排。具体运行时契约见 [API](docs/API.md) 和 [架构](docs/ARCHITECTURE.md)。
 
-Evaluation、Safety Policy 和 Deployment 必须按 `MASTER_WORKFLOW.md` 及明确任务单独推进，不得为了演示提前加入认证、支付、云部署或复杂 Agent。
+已有 Cross-Phase E1 包含匝比、复阻抗、工作区域、工作点求解及单一负载下的输入电压包络。`POST /projects/{project_id}/gain-curve` 读取已保存参数。它不等于 V2 的规格综合和多工况工作台。
 
 ## Technology Stack
 
@@ -127,7 +79,7 @@ Frontend：
 - TypeScript
 - Vite
 
-后续按 Phase 与实际算法需要引入 PostgreSQL、SciPy 和 pandas。
+后续按当前任务与实际算法需要引入其他依赖，不为文档重构提前更换技术栈。
 
 ## Repository Layout
 
@@ -280,7 +232,9 @@ GitHub Actions 会在 push 和 pull request 时自动执行相同的后端与前
 
 ## Documentation
 
-- `docs/MASTER_WORKFLOW.md`：产品规划、架构和 Phase 顺序
+- `docs/MASTER_WORKFLOW.md`：当前里程碑、任务依赖和验收
+- `docs/V2_DESIGN.md`：V2 目标设计契约
+- `docs/history/`：V1 历史主线，不定义当前执行顺序
 - `docs/ARCHITECTURE.md`：当前架构与模块边界
 - `docs/DOMAIN_ASSUMPTIONS.md`：公式、适用条件、单位和工程假设
 - `docs/RULES.md`：Design Review Rule 定义
@@ -295,7 +249,7 @@ GitHub Actions 会在 push 和 pull request 时自动执行相同的后端与前
 - 每个工程公式至少覆盖正常、边界、无效、单位转换和缺失输入。
 - 每条 Rule 至少覆盖触发、不触发、缺失数据和无效数据。
 - Waveform Algorithm 必须使用 Synthetic Fixtures 验证噪声、采样、缺失 Channel 和数值稳定性。
-- Backend Phase 完成前运行完整 `pytest`。
+- 涉及实现的功能里程碑完成前运行完整 `pytest`；纯文档变更检查结构、链接和陈述一致性。
 - Frontend 修改后至少运行 `npm run build`。
 - 测试失败时不得声称 Task Complete，除非失败与当前任务无关且已记录原因。
 

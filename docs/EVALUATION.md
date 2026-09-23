@@ -1,5 +1,7 @@
 # Unified Evaluation Audit
 
+> 以下审计工具与合成 fixture 属于现有 V1。V2 验收见 [V2_DESIGN.md](V2_DESIGN.md) 第 13 节；软件行为、数值交叉核验和硬件验证分开报告，T01 不声称通过 V2 实现验收。
+
 本项目的 Unified Evaluation Audit 是跨 Phase 的软件质量检查，不是新的
 Engineering Phase，也不是 LLC 参考设计、器件规格、认证或量产安全结论。
 

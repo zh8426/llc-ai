@@ -1,6 +1,63 @@
 # Domain Assumptions
 
-本文记录 Phase 1 确定性计算与 Phase 2 规则引擎引入的公式定义、输入约束、单位约定、项目级配置和适用边界。依据为 `docs/MASTER_WORKFLOW.md` 第 10、12–13 节。
+本文分别记录 V2 目标契约和当前 V1 已实现模型。T01 只增加文档定义，不改变运行时代码、已有公式版本或旧项目数据。任务顺序见 [MASTER_WORKFLOW.md](MASTER_WORKFLOW.md)，完整 V2 设计见 [V2_DESIGN.md](V2_DESIGN.md)。
+
+已有公式标识中的 `-V2`（例如 `LLC-MREQ-FHA-V2`）表示该公式的修订版本，不表示产品 V2 工作台已实现。
+
+## V2 M1 工程模型契约（待实现）
+
+### V2-A 连接方式、范围与工程量
+
+- 首版模型为理想半桥 LLC、固定单输出、中心抽头二极管整流、变频、稳态正负载。硅 MOSFET 为初始产品范围，理想 FHA 不代表已建立真实器件模型。
+- 匝比固定为 `n = Np / Ns_half`，Ns_half 是每个导通副边半绕组匝数，不是两个半绕组之和。项目必须显式记录副边连接方式。
+- V1 只定义 `n = Np / Ns` 且未保存副边连接，导入时应保留来源并标记待确认，不自动转换、除二或乘二。
+- Lr、Lm、Cr 使用原边等效定义，内部单位为 H、H、F；输入是 LLC 直流母线电压，输出是直流输出电压。
+- 未指定器件压降、寄生参数或温度模型时，不偷偷填值。目标效率是需求；据此算 Pin 只能标注预算估算，不能证明效率达标。
+
+### V2-B 参数综合与额定参考点
+
+以下为 T04–T06 待实现/核验的公式契约，T01 不赋予它们运行时已实现的状态：
+
+| 定义 | 公式 | 单位/条件 |
+|---|---|---|
+| Ro_rated | Vout² / Pout_rated | Ω；Pout_rated > 0 |
+| Re_rated | 8 n² Ro_rated / π² | Ω；当前副边连接和理想 FHA |
+| Mreq | 2 n Vout / Vin | 无量纲；忽略整流压降和损耗 |
+| Ln | Lm / Lr | 无量纲；不能与倒数或加一的文献定义混用 |
+| Qe_rated | Zr / Re_rated | 无量纲；在额定负载定义 |
+| Zr | Qe_rated × Re_rated | Ω |
+| Lr | Zr / (2πfr) | H |
+| Cr | 1 / (2πfrZr) | F |
+| Lm | Ln × Lr | H |
+
+反算式来自 `fr = 1/(2π√(LrCr))` 与 `Zr = √(Lr/Cr)` 的代数联立；应测试回算 fr、Zr、Ln、Qe 的一致性。每个其他负载工况重新计算 Ro、Re 和 Qe，不能沿用额定 Qe。
+
+参考：ST [AN2450](https://www.st.com/resource/en/application_note/an2450-llc-resonant-halfbridge-converter-design-guideline-stmicroelectronics.pdf) 的 FHA 与设计过程；现有 V1 的来源保留在下文。文献中的电感比符号必须先映射到本项目 Ln 定义。
+
+候选搜索在有限 n、fr、Ln、Qe_rated 集合中进行。范围、步长、配置版本和来源应显式保存。连续匝比候选不代表已经完成整数匝数、磁通、绕组或磁件制造设计。搜索预设和工程裕量在独立核验前不能宣传为通用推荐值。
+
+### V2-C 工况、容差与求解边界
+
+- CaseSet 保存实际检查的输入电压、正负载和 Lr/Lm/Cr 容差组合；声明数量、抽样方式和覆盖边界。
+- 单一额定功率、三个输入电压点和有限角点都不能代表连续全域已经验证。
+- 无温度模型时可记录温度条件，但要明确没有计算其影响；不能自动填 25°C。
+- Lr/Lm 相关时，独立角点仅作有标识的包络假设；允许显式相关组合。
+- 空载、启动、突发、短路和瞬态为首版模型外，不得用小正数绕过正负载要求。
+- 有控制器能力数据时，以控制器范围和项目允许范围的交集求解；交集为空为约束冲突。
+- 数值扫描和二分需验证多根、端点、相切根与窄峰。未找到解只描述搜索结果，不等于证明物理上不存在解。
+- 多个可用根保留完整证据；没有分支选择依据时，不宣称控制可实现。
+- 感性区域只表示 FHA 输入阻抗分类，不证明实际 ZVS。完整判断仍需节点电容、换流电流、死区和仿真/实测证据。
+- 数值收敛容差与工程裕量分别管理；不因计算失败自动放宽工程约束。
+
+### V2-D 来源、版本与结果状态
+
+目标、假设、选定参数、估算与实测分别保存。每次分析绑定冻结需求、设计、工况及算法配置；旧结果对旧版本保留，不能自动验证新设计。
+
+执行状态、适用性、工况求解状态、证据来源与需求判定为独立字段，枚举见 V2_DESIGN 第 6 节。原 Severity 仍限于 PASS / INFO / WARNING / CRITICAL / INSUFFICIENT_DATA。任务 SUCCEEDED、点 SOLVED、FHA 初筛通过和真实测试通过不能混同。
+
+## V1 已实现定义与历史演进
+
+以下保留现有 V1 公式、规则、Phase 和 E1 记录，供维护与迁移回归使用。早期规则依据为 [V1 历史主线](history/V1_MASTER_WORKFLOW.md) 第 10、12–13 节；这些历史阶段不定义 V2 开发顺序。
 
 ## Cross-Phase E1-A：变压器匝比约定
 
@@ -90,8 +147,8 @@
 | `LLC-QE-FHA-V1` | FHA quality factor | `Qe = Zr / Re` | dimensionless |
 | `LLC-FN-FHA-V1` | Normalized frequency | `Fn = fs / fr` | dimensionless |
 | `LLC-MREQ-FHA-V2` | Required gain | `Mreq = 2 × n × Vout / Vin` | dimensionless |
-| `LLC-ZIN-FHA-V1` | FHA input impedance | `Zin = ZLr + ZCr + (ZLm || Re)` | ohm |
-| `LLC-GAIN-FHA-V1` | FHA tank gain | `MFHA = abs((ZLm || Re) / Zin)` | dimensionless |
+| `LLC-ZIN-FHA-V1` | FHA input impedance | `Zin = ZLr + ZCr + (ZLm \|\| Re)` | ohm |
+| `LLC-GAIN-FHA-V1` | FHA tank gain | `MFHA = abs((ZLm \|\| Re) / Zin)` | dimensionless |
 | `LLC-REGION-FHA-V1` | FHA operating region | sign of `Im(Zin)` | enum |
 | `LLC-OPERATING-POINT-FHA-V2` | FHA operating point | `MFHA(fsw) = Mreq` with inductive-region selection and V2 required gain | structured |
 | `LLC-AVAILABLE-GAIN-FHA-V2` | Available FHA maximum gain | `max(MFHA(fsw))` over inductive points in the configured frequency range | dimensionless |
