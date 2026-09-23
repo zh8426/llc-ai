@@ -2,9 +2,13 @@
 
 # LLC AI Engineering Assistant — Agent 工作规范
 
+当前开发主线为 V2：先阅读 [MASTER_WORKFLOW](docs/MASTER_WORKFLOW.md)、[V2_DESIGN](docs/V2_DESIGN.md) 与 [DOMAIN_ASSUMPTIONS](docs/DOMAIN_ASSUMPTIONS.md)。当前 T01 只建立文档契约，运行时代码仍为 V1；V2 能力必须随任务实现并验证后才能描述为可用。
+
+`docs/history/` 中的旧 Phase 主线仅作历史参考，不作为当前执行指令。每次只执行用户指定的任务；本文和主线不自动授权后续任务。
+
 ## 1. 项目目标
 
-本仓库用于开发一个面向 **Half-Bridge LLC** 电源设计评审与故障排查的 Engineering Assistant。
+本仓库用于开发面向 **Half-Bridge LLC** 的设计与验证工作台。V2 首版主线为规格、候选谐振腔、多工况检查、方案比较、设计版本和计算书；已有 V1 评审与排查能力按任务验证后迁移。
 
 本产品用于辅助具备专业能力的电力电子工程师进行研发工作。
 
@@ -23,21 +27,9 @@
 
 ## 2. 核心开发原则
 
-所有工程分析必须遵循以下优先级：
+确定性工程计算、规则和信号处理由程序执行；LLM 负责调用工具和解释结果。计算职责不构成证据可信度的绝对排序。
 
-```text
-确定性工程计算
->
-Engineering Rule
->
-实测 Waveform Evidence
->
-已验证 Engineering Case
->
-LLM Interpretation
-```
-
-不得颠倒上述优先级。
+模型与实测冲突时，应检查模型适用范围、参数、工况、探头/仪器和不确定度，保留双方证据，不因计算是确定性的就自动否定测量。分析、仿真、测量和合成测试数据必须分别标识。
 
 如果某个工程结果可以通过程序确定性计算得到，则不得让 LLM 替代该计算。
 
@@ -92,7 +84,9 @@ LLM 主要负责：
 
 不得为了“代码通用性”而提前实现当前产品范围之外的大量功能。
 
-优先保证当前 MVP 正确、可靠、可验证。
+优先保证当前任务正确、可靠、可验证。
+
+V2 M1 目标进一步明确为中心抽头二极管整流、固定单输出、变频、理想稳态 FHA、正负载，匝比为 `n = Np / Ns_half`。这是待实现的模型契约，不得据此重解释 V1 中未记录副边连接的旧项目。空载、启动、突发、短路和瞬态不得通过补小正数强行进入稳态模型。
 
 ---
 
@@ -296,6 +290,8 @@ FAILED
 ```
 
 等未经定义的 Severity。
+
+V2 的执行状态、适用性、工况状态和需求判定使用独立字段，见 `docs/V2_DESIGN.md`；不得把 `FAILED`、`OUTSIDE_MODEL` 或 `NOT_IMPLEMENTED` 塞入 Severity，也不得把未实现的功能笼统写成缺输入。
 
 一个完整 Finding 至少应能够表达：
 
@@ -534,7 +530,7 @@ pytest
 
 每完成一个 Engineering Module，应运行相关测试。
 
-一个 Phase 完成之前，应运行完整 Backend Test Suite。
+一个涉及实现的功能里程碑完成之前，应运行完整 Backend Test Suite。纯文档任务检查结构、链接、归档一致性和工程陈述，不宣称执行了未运行的测试。
 
 Frontend 修改后至少运行：
 
@@ -715,6 +711,8 @@ LLM 是 Enhancement Layer，不是核心 Engineering Runtime。
 
 需要精确计算和查询的数据必须结构化。
 
+V2 需求、设计、工况和运行遵守草稿/冻结契约；冻结输入不允许原地覆盖。修改时创建新版本，旧报告保持不变，当前版本显示依赖分析尚未覆盖。目标、假设、选定值、估算和实测值不能互相静默覆盖；原始文件、来源和模型版本随证据保存。
+
 ---
 
 ## 22. Fault Case 规范
@@ -795,11 +793,7 @@ Evidence Ranking
 Recommended Next Measurement
 ```
 
-诊断输出应优先返回：
-
-`Top 3 Candidate Causes`
-
-而不是未经充分证据直接给出唯一 Root Cause。
+诊断最多返回三个有依据的候选原因；没有匹配证据时应明确无匹配，不为凑数返回零匹配案例。案例检索分数不是经校准的根因概率，不得把词语重合直接解释为工程诊断。
 
 ---
 
@@ -911,35 +905,11 @@ refactor():
 
 ---
 
-## 28. Phase Discipline
+## 28. Milestone / Task Discipline
 
-必须按照：
+按 `docs/MASTER_WORKFLOW.md` 的 M0–M4 与 T01–T10 依赖推进，只完成当前用户明确指定的任务。旧 Phase 0–10 已归档，不要求重跑旧路线。
 
-`docs/MASTER_WORKFLOW.md`
-
-定义的 Phase 推进。
-
-只完成当前明确要求的 Phase。
-
-不得在任务完成后自动继续下一个 Phase。
-
-例如：
-
-当任务要求实现：
-
-`LLC Core Calculation Engine`
-
-不得顺便继续：
-
-- LLM；
-- RAG；
-- Agent；
-- Datasheet Parser；
-- User Authentication；
-- Payment；
-- Cloud Deployment。
-
-避免 Scope Creep。
+当前任务完成后报告并停止，不自动进入下一任务。只修改当前任务需要的文档、代码和测试，不顺带加入 LLM、RAG、认证、支付、云部署或复杂 Agent。
 
 ---
 
@@ -968,7 +938,7 @@ STOP
 阅读：
 
 - AGENTS.md；
-- 当前 Phase；
+- 当前任务编号、里程碑和验收条件；
 - 相关代码；
 - 相关 Test；
 - 相关 Documentation。
@@ -1004,7 +974,7 @@ STOP
 
 完成当前任务后停止。
 
-不得自行进入下一 Phase。
+不得自行进入下一任务或里程碑。
 
 ---
 
@@ -1014,10 +984,9 @@ STOP
 
 一个 Task 只有同时满足以下条件才算 Done：
 
-- Feature 已实现；
+- 当前任务交付物已完成；文档任务不声称 Feature 已实现；
 - Architecture Boundary 未被破坏；
-- Test 已增加；
-- Test 已通过；
+- 工程实现变更有对应 Test 且已通过；纯文档任务完成对应文档验证；
 - Error Handling 已实现；
 - Units 已明确；
 - Structured Output 已实现；
@@ -1182,4 +1151,4 @@ LLM Orchestration
 
 而是让系统能够：
 
-> **基于可计算的数据、可验证的规则、真实测量 Evidence 和经过确认的 Engineering Case，辅助工程师完成 LLC Design Review 与 Troubleshooting。**
+> **基于版本化需求和设计、可复算的多工况分析以及可追溯的仿真与测量证据，辅助工程师完成 LLC 设计、验证和问题处理。**

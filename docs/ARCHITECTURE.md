@@ -1,6 +1,8 @@
 # Architecture
 
-## 当前范围：Phase 10
+> 本文描述当前 V1 运行时及历史模块演进，不表示 V2 已实现。新产品架构见 [V2_DESIGN.md](V2_DESIGN.md)，开发顺序见 [MASTER_WORKFLOW.md](MASTER_WORKFLOW.md)。
+
+## V1 实现范围：Phase 0–10 与 E1
 
 Phase 3 形成第一个 Project Design Review Web Workflow：
 
